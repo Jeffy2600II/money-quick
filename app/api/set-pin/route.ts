@@ -1,6 +1,5 @@
 import { setPin, hasPin } from "../../../lib/pin";
 export const dynamic = 'force-dynamic';
-
 export async function POST(req: Request) {
   const { pin } = await req.json();
   if (!pin || typeof pin !== "string" || pin.length < 4 || pin.length > 6) {

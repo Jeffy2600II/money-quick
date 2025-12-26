@@ -19,12 +19,12 @@ export default function PinInput({ onSubmit }: { onSubmit: (pin: string) => void
   return (
     <div>
       <div className="flex gap-2 justify-center mb-4">
-        {Array.from({ length: Math.max(input.length, 4) }, (_, i) => (
+        {Array.from({length: Math.max(input.length,4)}, (_,i) => (
           <span key={i} className="text-3xl">{input[i] ? "•" : "○"}</span>
         ))}
       </div>
       <div className="grid grid-cols-3 gap-2 w-full max-w-xs py-4">
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((n, i) =>
+        {[1,2,3,4,5,6,7,8,9,0].map((n,i) =>
           <button key={i} onClick={() => handleNum(n)} type="button">{n}</button>
         )}
         <button onClick={handleBack} type="button">⌫</button>
