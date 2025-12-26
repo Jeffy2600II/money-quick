@@ -20,6 +20,7 @@
     "eslint-config-next": "14.2.0",
     "typescript": "^5.3.3",
     "@types/node": "^20.10.6",
-    "@types/react": "^18.2.41"
+    "@types/react": "^18.2.41",
+    "@types/bcryptjs": "^2.4.2"
   }
 }
