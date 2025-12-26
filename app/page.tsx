@@ -1,16 +1,13 @@
 'use client'
 import { useState } from 'react'
+import Balance from '@/components/Balance'
+import ModeSwitch from '@/components/ModeSwitch'
+import Numpad from '@/components/Numpad'
 
 export default function Home() {
   const [value, setValue] = useState('0')
   const [mode, setMode] = useState < 'in' | 'out' > ('out')
   const [balance, setBalance] = useState < number | null > (null)
-  
-  const press = (n: string) => {
-    setValue(v => (v === '0' ? n : v + n))
-  }
-  
-  const clear = () => setValue('0')
   
   const submit = async () => {
     const amount = Number(value)
@@ -29,32 +26,16 @@ export default function Home() {
   
   return (
     <main style={{ maxWidth: 420, margin: '0 auto', padding: 20 }}>
-      <h3>ยอดเงินคงเหลือ</h3>
-      <h1>{balance ?? '-'}</h1>
-
-      <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-        <button onClick={() => setMode('in')}>+ รายรับ</button>
-        <button onClick={() => setMode('out')}>- รายจ่าย</button>
-      </div>
+      <Balance value={balance} />
+      <ModeSwitch mode={mode} setMode={setMode} />
 
       <h2>{mode === 'in' ? '+' : '-'} {value}</h2>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3,1fr)',
-          gap: 10,
-        }}
-      >
-        {[1,2,3,4,5,6,7,8,9].map(n => (
-          <button key={n} onClick={() => press(n.toString())}>
-            {n}
-          </button>
-        ))}
-        <button onClick={() => press('0')}>0</button>
-        <button onClick={clear}>⌫</button>
-        <button onClick={submit}>✔</button>
-      </div>
+      <Numpad
+        onPress={n => setValue(v => (v === '0' ? n : v + n))}
+        onClear={() => setValue('0')}
+        onSubmit={submit}
+      />
     </main>
   )
 }
