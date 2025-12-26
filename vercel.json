@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "env": [
+    "VERCEL_KV_URL",
+    "VERCEL_KV_TOKEN",
+    "PIN_HASH_SECRET"
+  ]
+}

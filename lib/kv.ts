@@ -1,14 +1,14 @@
-import { kv } from '@vercel/kv'
-import { Transaction } from './types.js'
+import { kv } from "@vercel/kv";
 
-export async function getBalance() {
-  return (await kv.get < number > ('balance')) ?? 0
+export async function getKV < T > (key: string): Promise < T | undefined > {
+  return await kv.get < T > (key);
 }
-
-export async function setBalance(value: number) {
-  await kv.set('balance', value)
+export async function setKV < T > (key: string, value: T) {
+  return await kv.set(key, value);
 }
-
-export async function saveTx(tx: Transaction) {
-  await kv.set(`tx:${tx.time}`, tx)
+export async function listTx(limit: number = 50) {
+  const keys = await kv.keys("tx:*");
+  const sorted = keys.sort().reverse().slice(0, limit);
+  const txList = await Promise.all(sorted.map(k => kv.get(k)));
+  return txList.filter(Boolean);
 }

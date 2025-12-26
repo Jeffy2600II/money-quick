@@ -1,20 +1,33 @@
-export default function Numpad({
-  onPress,
-  onClear,
-  onSubmit,
-}: {
-  onPress: (n: string) => void
-  onClear: () => void
-  onSubmit: () => void
-}) {
+type Props = {
+  value: number,
+  onNum: (n: number) => void,
+  onBack: () => void,
+  onOk: () => void
+};
+const keys = [
+  [1, 2, 3],
+  [4, 5, 6],
+  [7, 8, 9],
+  [0, 'back', 'ok']
+];
+
+export default function Numpad({ value, onNum, onBack, onOk }: Props) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
-      {[1,2,3,4,5,6,7,8,9].map(n => (
-        <button key={n} onClick={() => onPress(n.toString())}>{n}</button>
-      ))}
-      <button onClick={() => onPress('0')}>0</button>
-      <button onClick={onClear}>⌫</button>
-      <button onClick={onSubmit}>✔</button>
+    <div className="grid grid-cols-3 gap-2 w-full max-w-xs py-4">
+      {keys.flat().map((k, i) =>
+        <button
+          key={i}
+          style={{ height: 54 }}
+          className="text-2xl rounded bg-[#232e43] focus:outline-none"
+          onClick={() => {
+            if (typeof k === "number") onNum(k);
+            else if (k === "back") onBack();
+            else if (k === "ok") onOk();
+          }}
+        >
+          {k === "back" ? "⌫" : k === "ok" ? "✔" : k}
+        </button>
+      )}
     </div>
-  )
+  );
 }

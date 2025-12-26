@@ -1,8 +1,7 @@
-export default function Balance({ value }: { value: number | null }) {
+export default function Balance({ value }: { value: number }) {
   return (
-    <>
-      <h3>ยอดเงินคงเหลือ</h3>
-      <h1>{value ?? '-'}</h1>
-    </>
-  )
+    <div className="text-[2.7rem] font-bold py-6 select-none">
+      ฿ {value.toLocaleString()}
+    </div>
+  );
 }

@@ -1,0 +1,24 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #181f2a;
+  color: #fff;
+  transition: background .3s;
+}
+[data-theme='light'] {
+  background: #f5f6fa;
+  color: #222;
+}
+button {
+  outline: none;
+  border: none;
+  background: #222e3a;
+  color: #fff;
+  font-size: 1.2em;
+  border-radius: .5em;
+  margin: .2em;
+}
+button:active {
+  background: #2d3a54;
+}
