@@ -1,29 +1,42 @@
-'use client'
+'use client';
 import { useState } from "react";
 import PinInput from "../../components/PinInput";
+import * as pinClient from "../../lib/pinClient";
 
 export default function SetupPinPage() {
-  const [confirmPin, setConfirmPin] = useState("");
   const [step, setStep] = useState < "first" | "confirm" | "done" > ("first");
   const [pin, setPin] = useState < string > ("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   
   async function handleFirst(pinValue: string) {
     setPin(pinValue);
     setStep("confirm");
   }
+  
   async function handleConfirm(pinValue: string) {
+    setError("");
+    setLoading(true);
     if (pin !== pinValue) {
-      setConfirmPin("");
+      setError("PIN ไม่ตรงกัน! กรุณาตั้งใหม่");
+      setPin("");
       setStep("first");
-      alert("PIN ไม่ตรงกัน! กรุณาตั้งใหม่");
-    } else {
-      await fetch("/api/set-pin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin })
-      });
-      setStep("done");
-      window.location.href = "/lock";
+      setLoading(false);
+      return false;
+    }
+    try {
+      const res = await pinClient.setPin(pinValue);
+      if (res.ok && res.data?.ok) {
+        setStep("done");
+        // ไปหน้าล็อกให้ใส่ PIN
+        window.location.href = "/lock";
+      } else {
+        setError(res.error || "ไม่สามารถบันทึก PIN ได้");
+      }
+    } catch (e) {
+      setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+    } finally {
+      setLoading(false);
     }
   }
   
@@ -43,6 +56,8 @@ export default function SetupPinPage() {
         </>
       )}
       {step === "done" && <div>PIN ถูกบันทึกแล้ว!</div>}
+      {loading && <div className="mt-2">กำลังบันทึก...</div>}
+      {error && <div className="mt-2 text-red-500">{error}</div>}
     </main>
   );
 }

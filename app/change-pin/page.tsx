@@ -1,39 +1,61 @@
-'use client'
+'use client';
 import { useState } from "react";
 import PinInput from "../../components/PinInput";
+import * as pinClient from "../../lib/pinClient";
 
 export default function ChangePinPage() {
   const [step, setStep] = useState < "old" | "new" | "confirm" | "done" > ("old");
   const [oldPin, setOldPin] = useState("");
   const [newPin, setNewPin] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   
   async function handleOldPin(pinValue: string) {
-    setOldPin(pinValue);
-    setStep("new");
+    setError("");
+    setLoading(true);
+    try {
+      const res = await pinClient.checkPin(pinValue);
+      if (res.ok && res.data?.ok) {
+        setOldPin(pinValue);
+        setStep("new");
+      } else {
+        setError("PIN เดิมไม่ถูกต้อง");
+      }
+    } catch {
+      setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+    } finally {
+      setLoading(false);
+    }
   }
+  
   async function handleNewPin(pinValue: string) {
     setNewPin(pinValue);
     setStep("confirm");
   }
+  
   async function handleConfirmPin(pinValue: string) {
+    setError("");
+    setLoading(true);
     if (newPin !== pinValue) {
       setError("PIN ใหม่ไม่ตรงกัน");
       setStep("new");
-    } else {
-      setError("");
-      const result = await fetch("/api/change-pin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ oldPin, newPin })
-      });
-      if (result.ok) {
+      setLoading(false);
+      return;
+    }
+    try {
+      const res = await pinClient.changePin(oldPin, newPin);
+      if (res.ok && res.data?.ok) {
         localStorage.setItem("pin", newPin);
         setStep("done");
       } else {
-        setError("PIN เดิมผิด หรือเกิดข้อผิดพลาด");
+        setError(res.error || "PIN เดิมผิด หรือเกิดข้อผิดพลาด");
         setStep("old");
       }
+    } catch {
+      setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+      setStep("old");
+    } finally {
+      setLoading(false);
     }
   }
   
@@ -44,26 +66,23 @@ export default function ChangePinPage() {
         <>
           <p className="mb-2 text-gray-500">กรุณาใส่ PIN เก่า</p>
           <PinInput onSubmit={handleOldPin} />
-          {error && <div className="text-red-500 mt-2">{error}</div>}
         </>
       )}
       {step === "new" && (
         <>
           <p className="mb-2 text-gray-500">ตั้ง PIN ใหม่</p>
           <PinInput onSubmit={handleNewPin} />
-          {error && <div className="text-red-500 mt-2">{error}</div>}
         </>
       )}
       {step === "confirm" && (
         <>
           <p className="mb-2 text-gray-500">ยืนยัน PIN ใหม่อีกครั้ง</p>
           <PinInput onSubmit={handleConfirmPin} />
-          {error && <div className="text-red-500 mt-2">{error}</div>}
         </>
       )}
-      {step === "done" && (
-        <div className="text-green-600 mt-4">เปลี่ยน PIN สำเร็จ!</div>
-      )}
+      {step === "done" && <div className="text-green-600 mt-4">เปลี่ยน PIN สำเร็จ!</div>}
+      {loading && <div className="mt-4">กำลังประมวลผล...</div>}
+      {error && <div className="text-red-500 mt-2">{error}</div>}
     </main>
   );
 }
