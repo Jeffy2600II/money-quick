@@ -1,5 +1,5 @@
 import { kv } from '@vercel/kv'
-import { Transaction } from './types'
+import { Transaction } from './types.js'
 
 export async function getBalance() {
   return (await kv.get < number > ('balance')) ?? 0

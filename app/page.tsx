@@ -1,8 +1,8 @@
 'use client'
 import { useState } from 'react'
-import Balance from '../components/Balance'
-import ModeSwitch from '../components/ModeSwitch'
-import Numpad from '../components/Numpad'
+import Balance from '../components/Balance.js'
+import ModeSwitch from '../components/ModeSwitch.js'
+import Numpad from '../components/Numpad.js'
 
 export default function Home() {
   const [value, setValue] = useState('0')

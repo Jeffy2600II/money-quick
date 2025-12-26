@@ -1,5 +1,5 @@
 import { kv } from '@vercel/kv'
-import { Transaction } from '../lib/types'
+import { Transaction } from '../lib/types.js'
 
 export default async function History() {
   const keys = await kv.keys('tx:*')
@@ -9,7 +9,7 @@ export default async function History() {
   
   const txs = items
     .filter(Boolean)
-    .sort((a, b) => b!.time - a!.time)
+    .sort((a, b) => (b!.time - a!.time))
   
   return (
     <main style={{ padding: 20 }}>
