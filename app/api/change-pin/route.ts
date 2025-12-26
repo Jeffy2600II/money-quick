@@ -13,7 +13,6 @@ export async function POST(req: Request) {
   ) {
     return new Response("Bad request", { status: 400 });
   }
-  // เช็ค PIN เก่าก่อน
   const ok = await checkPin(oldPin);
   if (!ok) {
     return new Response("รหัสเดิมไม่ถูกต้อง", { status: 401 });

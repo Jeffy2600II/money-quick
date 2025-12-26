@@ -1,14 +1,19 @@
-'use client'
-export default function ToggleInOut({ mode, setMode }: { mode: 'in' | 'out', setMode: (m: 'in' | 'out') => void }) {
+export default function ToggleInOut({ mode, setMode }: { mode: "in" | "out";setMode: (m: "in" | "out") => void }) {
   return (
-    <div className="flex gap-3">
-      <button aria-pressed={mode==='in'} onClick={()=>setMode('in')}
-        className={`flex-1 py-3 rounded-lg ${mode==='in' ? 'bg-green-600 text-white' : 'bg-neutral/6 text-neutral'}`}>
-        + รายรับ
+    <div className="mb-4 flex justify-center gap-6">
+      <button
+        className={`px-4 py-2 rounded-xl border-2 font-bold ${mode === "in" ? "bg-green-200 border-green-600" : "bg-white border-gray-300"}`}
+        onClick={() => setMode("in")}
+        type="button"
+      >
+        + เงินเข้า
       </button>
-      <button aria-pressed={mode==='out'} onClick={()=>setMode('out')}
-        className={`flex-1 py-3 rounded-lg ${mode==='out' ? 'bg-red-600 text-white' : 'bg-neutral/6 text-neutral'}`}>
-        - รายจ่าย
+      <button
+        className={`px-4 py-2 rounded-xl border-2 font-bold ${mode === "out" ? "bg-red-100 border-red-500" : "bg-white border-gray-300"}`}
+        onClick={() => setMode("out")}
+        type="button"
+      >
+        − เงินออก
       </button>
     </div>
   );

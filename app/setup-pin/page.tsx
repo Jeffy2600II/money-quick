@@ -3,32 +3,44 @@ import { useState } from "react";
 import PinInput from "../../components/PinInput";
 
 export default function SetupPinPage() {
-  const [step, setStep] = useState<'first'|'confirm'|'done'>('first');
-  const [pin, setPin] = useState('');
-
-  async function handleFirst(p:string){ setPin(p); setStep('confirm'); }
-  async function handleConfirm(p:string){
-    if (p !== pin) { alert('PIN ไม่ตรงกัน'); setStep('first'); return; }
-    // set on server
-    const res = await fetch('/api/set-pin', { method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ pin })});
-    if (res.ok) {
-      setStep('done');
-      window.location.href = '/lock';
+  const [step, setStep] = useState < "first" | "confirm" | "done" > ("first");
+  const [pin, setPin] = useState < string > ("");
+  
+  async function handleFirst(pinValue: string) {
+    setPin(pinValue);
+    setStep("confirm");
+  }
+  async function handleConfirm(pinValue: string) {
+    if (pin !== pinValue) {
+      setStep("first");
+      alert("PIN ไม่ตรงกัน! กรุณาตั้งใหม่");
     } else {
-      alert('ไม่สามารถบันทึกรหัสได้');
-      setStep('first');
+      await fetch("/api/set-pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin })
+      });
+      setStep("done");
+      window.location.href = "/lock";
     }
   }
-
+  
   return (
-    <main className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-xs bg-surface p-6 rounded-lg shadow text-center">
-        <h3 className="text-lg font-semibold mb-2">ตั้ง PIN สำหรับใช้งาน</h3>
-        <p className="text-sm text-neutral mb-4">PIN 4-6 หลัก (จะใช้กับทุกอุปกรณ์)</p>
-        {step === 'first' && <PinInput onSubmit={handleFirst} />}
-        {step === 'confirm' && <PinInput onSubmit={handleConfirm} />}
-        {step === 'done' && <div className="text-green-500">บันทึกสำเร็จ</div>}
-      </div>
+    <main className="flex flex-col items-center justify-center min-h-screen">
+      <h1 className="mb-2 font-bold text-xl">ตั้ง PIN 4-6 หลัก</h1>
+      {step === "first" && (
+        <>
+          <PinInput onSubmit={handleFirst} />
+          <p className="text-gray-500 mt-2">ตั้ง PIN ใหม่</p>
+        </>
+      )}
+      {step === "confirm" && (
+        <>
+          <PinInput onSubmit={handleConfirm} />
+          <p className="text-gray-500 mt-2">ยืนยัน PIN อีกครั้ง</p>
+        </>
+      )}
+      {step === "done" && <div>PIN ถูกบันทึกแล้ว!</div>}
     </main>
   );
 }

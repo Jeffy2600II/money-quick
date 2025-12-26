@@ -1,5 +1,4 @@
 import { setPin, hasPin } from "../../../lib/pin";
-
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
@@ -7,7 +6,6 @@ export async function POST(req: Request) {
   if (!pin || typeof pin !== "string" || pin.length < 4 || pin.length > 6) {
     return new Response("Bad request", { status: 400 });
   }
-  // ป้องกันเปลี่ยน PIN ทับถ้ายังมีอยู่
   if (await hasPin()) {
     return new Response("PIN ถูกตั้งแล้ว", { status: 400 });
   }

@@ -1,31 +1,34 @@
-'use client'
 import { useState } from "react";
 
 export default function PinInput({ onSubmit }: { onSubmit: (pin: string) => void }) {
-  const [input, setInput] = useState('');
-  function handleNum(n:number){ if(input.length<6) setInput(s=>s + String(n)); }
-  function handleBack(){ setInput(s=> s.slice(0,-1)); }
-  function handleOk(){ if(input.length>=4 && input.length<=6){ onSubmit(input); setInput(''); } }
+  const [input, setInput] = useState("");
 
-  // prevent mobile native keyboard by not using any input element
+  function handleNum(n: number) {
+    if (input.length < 6) setInput(inp => inp + n.toString());
+  }
+  function handleBack() {
+    setInput(inp => inp.slice(0, -1));
+  }
+  function handleOk() {
+    if (input.length >= 4 && input.length <= 6) {
+      onSubmit(input);
+      setInput(""); // reset for next use
+    }
+  }
+
   return (
     <div>
-      <div className="flex justify-center gap-3 mb-4">
-        {Array.from({length:6}).map((_,i)=>(
-          <div key={i} className="w-4 h-4 rounded-full bg-neutral/10 flex items-center justify-center">
-            <div>{ input[i] ? '•' : '' }</div>
-          </div>
+      <div className="flex gap-2 justify-center mb-4">
+        {Array.from({ length: Math.max(input.length, 4) }, (_, i) => (
+          <span key={i} className="text-3xl">{input[i] ? "•" : "○"}</span>
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-2">
-        {[1,2,3,4,5,6,7,8,9].map(n=>(
-          <button key={n} onClick={()=>handleNum(n)} className="py-3 rounded-lg bg-neutral/6">{n}</button>
-        ))}
-        <div className="col-span-1">
-          <button onClick={()=>handleNum(0)} className="w-full py-3 rounded-lg bg-neutral/6">0</button>
-        </div>
-        <button onClick={handleBack} className="py-3 rounded-lg bg-neutral/6">⌫</button>
-        <button onClick={handleOk} className="py-3 rounded-lg button-primary">✔</button>
+      <div className="grid grid-cols-3 gap-2 w-full max-w-xs py-4">
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((n, i) =>
+          <button key={i} onClick={() => handleNum(n)} type="button">{n}</button>
+        )}
+        <button onClick={handleBack} type="button">⌫</button>
+        <button onClick={handleOk} type="button">✔</button>
       </div>
     </div>
   );
