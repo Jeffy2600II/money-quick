@@ -2,31 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Basic color tokens (if using Tailwind with dark mode 'class') */
-:root{
-  --bg:#0f1724; --surface:#0b1220; --text:#e6eef8; --muted:#9aa6b2; --primary:#07a177;
+:root {
+  --bg: #0f1724; --surface: #0b1220; --text: #e6eef8; --muted: #9aa6b2; --primary: #07a177;
 }
-html.dark { --bg:#0f1724; --surface:#071023; --text:#e6eef8; --muted:#9aa6b2; --primary:#07a177; }
-html.light { --bg:#f8fafc; --surface:#ffffff; --text:#0b1224; --muted:#475569; --primary:#0b8f5e; }
+html.dark { --bg: #0f1724; --surface: #071023; --text: #e6eef8; --muted: #9aa6b2; --primary: #07a177; }
+html.light { --bg: #f8fafc; --surface: #fff; --text: #0b1224; --muted: #475569; --primary: #0b8f5e; }
 
-html { background:var(--bg); color:var(--text); }
+html { background: var(--bg); color: var(--text); }
 body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
-
-/* Small utilities used in components */
 .bg-surface { background: var(--surface); }
 .text-base-100 { color: var(--text); }
 .text-neutral { color: var(--muted); }
-
-.button-primary {
-  background: linear-gradient(180deg,var(--primary), #066e54);
-  color: white;
-}
-
+.button-primary { background: linear-gradient(180deg, var(--primary), #066e54); color: white; }
 /* shake animation for wrong pin */
 @keyframes shake {
-  10%,90%{ transform: translateX(-1px); }
-  20%,80%{ transform: translateX(2px); }
-  30%,50%,70%{ transform: translateX(-4px); }
-  40%,60%{ transform: translateX(4px); }
+  10%,90%{ transform: translateX(-1px);}
+  20%,80%{ transform: translateX(2px);}
+  30%,50%,70%{ transform: translateX(-4px);}
+  40%,60%{ transform: translateX(4px);}
 }
 .shake { animation: shake .6s ease; }
