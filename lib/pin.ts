@@ -5,7 +5,6 @@ const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL!,
   token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
-
 const PIN_KEY = "pin-hash";
 
 export async function setPin(pin: string) {
