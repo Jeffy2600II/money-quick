@@ -1,33 +1,20 @@
-type Props = {
-  value: number,
-  onNum: (n: number) => void,
-  onBack: () => void,
-  onOk: () => void
-};
-const keys = [
-  [1, 2, 3],
-  [4, 5, 6],
-  [7, 8, 9],
-  [0, 'back', 'ok']
-];
+'use client'
+import React from 'react';
 
-export default function Numpad({ value, onNum, onBack, onOk }: Props) {
+export default function Numpad({ value, onNum, onBack, onOk }: { value: number, onNum: (n: number) => void, onBack: () => void, onOk: () => void }) {
+  const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
   return (
-    <div className="grid grid-cols-3 gap-2 w-full max-w-xs py-4">
-      {keys.flat().map((k, i) =>
-        <button
-          key={i}
-          style={{ height: 54 }}
-          className="text-2xl rounded bg-[#232e43] focus:outline-none"
-          onClick={() => {
-            if (typeof k === "number") onNum(k);
-            else if (k === "back") onBack();
-            else if (k === "ok") onOk();
-          }}
-        >
-          {k === "back" ? "⌫" : k === "ok" ? "✔" : k}
-        </button>
-      )}
+    <div className="w-full max-w-xs mx-auto">
+      <div className="grid grid-cols-3 gap-3">
+        {nums.slice(0,9).map(n=>(
+          <button key={n} onClick={()=>onNum(n)} className="py-4 rounded-lg bg-neutral/6 text-xl">{n}</button>
+        ))}
+        <div className="col-span-1">
+          <button onClick={()=>onNum(0)} className="w-full py-4 rounded-lg bg-neutral/6 text-xl">0</button>
+        </div>
+        <button onClick={onBack} className="py-4 rounded-lg bg-neutral/6 text-xl">⌫</button>
+        <button onClick={onOk} className="py-4 rounded-lg button-primary text-xl">✔</button>
+      </div>
     </div>
   );
 }

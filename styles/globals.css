@@ -1,24 +1,32 @@
-body {
-  margin: 0;
-  padding: 0;
-  font-family: 'Inter', system-ui, sans-serif;
-  background: #181f2a;
-  color: #fff;
-  transition: background .3s;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Basic color tokens (if using Tailwind with dark mode 'class') */
+:root{
+  --bg:#0f1724; --surface:#0b1220; --text:#e6eef8; --muted:#9aa6b2; --primary:#07a177;
 }
-[data-theme='light'] {
-  background: #f5f6fa;
-  color: #222;
+html.dark { --bg:#0f1724; --surface:#071023; --text:#e6eef8; --muted:#9aa6b2; --primary:#07a177; }
+html.light { --bg:#f8fafc; --surface:#ffffff; --text:#0b1224; --muted:#475569; --primary:#0b8f5e; }
+
+html { background:var(--bg); color:var(--text); }
+body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+
+/* Small utilities used in components */
+.bg-surface { background: var(--surface); }
+.text-base-100 { color: var(--text); }
+.text-neutral { color: var(--muted); }
+
+.button-primary {
+  background: linear-gradient(180deg,var(--primary), #066e54);
+  color: white;
 }
-button {
-  outline: none;
-  border: none;
-  background: #222e3a;
-  color: #fff;
-  font-size: 1.2em;
-  border-radius: .5em;
-  margin: .2em;
+
+/* shake animation for wrong pin */
+@keyframes shake {
+  10%,90%{ transform: translateX(-1px); }
+  20%,80%{ transform: translateX(2px); }
+  30%,50%,70%{ transform: translateX(-4px); }
+  40%,60%{ transform: translateX(4px); }
 }
-button:active {
-  background: #2d3a54;
-}
+.shake { animation: shake .6s ease; }

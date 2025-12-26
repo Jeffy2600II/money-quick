@@ -1,24 +1,31 @@
 'use client'
 import { useEffect, useState } from "react";
+import TransactionItem from "../../components/TransactionItem";
+
+type Tx = { type: 'in' | 'out', amount: number, time: number };
 
 export default function HistoryPage() {
-  const [items, setItems] = useState < { type: string, amount: number, time: number } [] > ([]);
+  const [list, setList] = useState < Tx[] > ([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState < string | null > (null);
+  
   useEffect(() => {
-    fetch('/api/history').then(res => res.json()).then(x => setItems(x));
+    fetch('/api/history').then(r => {
+      if (!r.ok) throw new Error('fetch failed');
+      return r.json();
+    }).then((data: Tx[]) => {
+      setList(data || []);
+    }).catch(() => setError('ไม่สามารถโหลดประวัติได้')).finally(() => setLoading(false));
   }, []);
+  
   return (
-    <main className="max-w-md mx-auto p-3">
-      <h2 className="font-bold text-2xl mb-4">ประวัติ</h2>
-      <ul>
-        {items.map((tx, idx) => (
-          <li key={idx} className="flex justify-between w-full py-2 border-b">
-            <span className={tx.type === "in" ? "text-green-500" : "text-red-500"}>
-              {tx.type === "in" ? "+" : "-"}
-            </span>
-            <span>฿ {tx.amount.toLocaleString()}</span>
-            <span>{new Date(tx.time).toLocaleTimeString()}</span>
-          </li>
-        ))}
+    <main className="px-4 py-6">
+      <h2 className="text-lg font-bold mb-3">ประวัติรายการ</h2>
+      {loading && <div>Loading...</div>}
+      {error && <div className="text-red-500">{error}</div>}
+      {!loading && list.length === 0 && <div className="text-neutral">ยังไม่มีรายการ</div>}
+      <ul className="mt-2 space-y-2">
+        {list.map((tx:any) => <TransactionItem key={tx.time} tx={tx} />)}
       </ul>
     </main>
   );
