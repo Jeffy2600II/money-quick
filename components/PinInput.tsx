@@ -10,7 +10,10 @@ export default function PinInput({ onSubmit }: { onSubmit: (pin: string) => void
     setInput(inp => inp.slice(0, -1));
   }
   function handleOk() {
-    if (input.length >= 4) onSubmit(input);
+    if (input.length >= 4) {
+      onSubmit(input);
+      setInput("");
+    }
   }
 
   return (
