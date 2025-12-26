@@ -1,4 +1,4 @@
-import { kv } from '..vercel/kv'
+import { kv } from '@vercel/kv'
 import { Transaction } from '../lib/types'
 
 export default async function History() {
