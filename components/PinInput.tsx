@@ -10,9 +10,9 @@ export default function PinInput({ onSubmit }: { onSubmit: (pin: string) => void
     setInput(inp => inp.slice(0, -1));
   }
   function handleOk() {
-    if (input.length >= 4) {
+    if (input.length >= 4 && input.length <= 6) {
       onSubmit(input);
-      setInput("");
+      setInput(""); // reset for next use
     }
   }
 
@@ -25,10 +25,10 @@ export default function PinInput({ onSubmit }: { onSubmit: (pin: string) => void
       </div>
       <div className="grid grid-cols-3 gap-2 w-full max-w-xs py-4">
         {[1,2,3,4,5,6,7,8,9,0].map((n,i) =>
-          <button key={i} onClick={() => handleNum(n)}>{n}</button>
+          <button key={i} onClick={() => handleNum(n)} type="button">{n}</button>
         )}
-        <button onClick={handleBack}>⌫</button>
-        <button onClick={handleOk}>✔</button>
+        <button onClick={handleBack} type="button">⌫</button>
+        <button onClick={handleOk} type="button">✔</button>
       </div>
     </div>
   );

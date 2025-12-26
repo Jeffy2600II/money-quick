@@ -12,43 +12,35 @@ export default function MainPage() {
   const [balance, setBalance] = useState(0);
   const [error, setError] = useState("");
 
+  // ตรวจสอบ PIN และโหลด balance
   useEffect(() => {
-    // เช็คว่า setup pin แล้วหรือยัง
+    const localPin = window.localStorage.getItem("pin");
     fetch("/api/has-pin")
       .then(res => res.json())
-      .then(data => {
+      .then(async data => {
         if (!data.exists) {
           window.location.href = "/setup-pin";
-          return;
-        }
-        const pin = window.localStorage.getItem("pin");
-        if (!pin) {
+        } else if (!localPin) {
           window.location.href = "/lock";
-          return;
-        }
-        // ตรวจสอบว่า PIN ถูกต้องไหมด้วยก็ได้
-        fetch("/api/pin-check", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pin }),
-        })
-          .then(res => res.json())
-          .then(data => {
-            if (!data.ok) {
-              window.localStorage.removeItem("pin");
-              window.location.href = "/lock";
-            } else {
-              setLoading(false);
-              // ดึง balance
-              fetch("/api/balance")
-                .then(res => res.json())
-                .then(x => setBalance(Number(x.balance)));
-            }
-          })
-          .catch(() => {
-            setError("เกิดข้อผิดพลาดในการตรวจสอบ PIN");
-            setLoading(false);
+        } else {
+          // check ว่า PIN นี้ถูกไหม
+          const res = await fetch("/api/pin-check", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pin: localPin }),
           });
+          const result = await res.json();
+          if (!result.ok) {
+            window.localStorage.removeItem("pin");
+            window.location.href = "/lock";
+          } else {
+            // PIN ผ่าน ดึง balance
+            fetch("/api/balance")
+              .then(res => res.json())
+              .then(x => setBalance(Number(x.balance)))
+              .finally(() => setLoading(false));
+          }
+        }
       })
       .catch(() => {
         setError("เกิดข้อผิดพลาดในการโหลดข้อมูล");
@@ -57,7 +49,7 @@ export default function MainPage() {
   }, []);
 
   function handleNum(n: number) {
-    setAmount(prev => Number((prev * 10 + n).toString().slice(0, 9)));
+    setAmount(prev => Number((prev * 10 + n).toString().replace(/^0+/, '').slice(0, 9)));
   }
   function handleBack() {
     setAmount(a => Math.floor(a / 10));
@@ -73,12 +65,12 @@ export default function MainPage() {
     });
     if (res.ok) {
       setAmount(0);
-      // reload balance
       const data = await res.json();
       setBalance(data.newBalance);
     } else {
       setError("บันทึกไม่สำเร็จ หรือ PIN ผิดพลาด");
-      // option: redirect to lock if pin fail
+      window.localStorage.removeItem("pin");
+      setTimeout(()=>window.location.href="/lock", 500);
     }
   }
 

@@ -13,7 +13,8 @@ export default function LockPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ pin })
     });
-    if (res.ok) {
+    const data = await res.json();
+    if (data.ok) {
       localStorage.setItem("pin", pin);
       window.location.href = "/";
     } else {

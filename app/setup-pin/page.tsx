@@ -23,7 +23,6 @@ export default function SetupPinPage() {
         body: JSON.stringify({ pin })
       });
       setStep("done");
-      // ไป lock page หรือ main page
       window.location.href = "/lock";
     }
   }
