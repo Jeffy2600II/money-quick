@@ -1,6 +1,8 @@
 import { getKV, setKV } from "../../../lib/kv";
 import { checkPin } from "../../../lib/pin";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
   const { type, amount, pin } = await req.json();
   if (!await checkPin(pin)) return new Response("Unauthorized", { status: 401 });
