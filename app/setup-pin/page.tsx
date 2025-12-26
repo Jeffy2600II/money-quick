@@ -3,6 +3,7 @@ import { useState } from "react";
 import PinInput from "../../components/PinInput";
 
 export default function SetupPinPage() {
+  const [confirmPin, setConfirmPin] = useState("");
   const [step, setStep] = useState < "first" | "confirm" | "done" > ("first");
   const [pin, setPin] = useState < string > ("");
   
@@ -12,6 +13,7 @@ export default function SetupPinPage() {
   }
   async function handleConfirm(pinValue: string) {
     if (pin !== pinValue) {
+      setConfirmPin("");
       setStep("first");
       alert("PIN ไม่ตรงกัน! กรุณาตั้งใหม่");
     } else {

@@ -1,15 +1,14 @@
 import { getKV, setKV } from "../../../lib/kv";
 import { checkPin } from "../../../lib/pin";
-export const dynamic = "force-dynamic";
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   const { type, amount, pin } = await req.json();
-  if (!(type === "in" || type === "out") || typeof amount !== "number" || amount <= 0) {
+  if (!await checkPin(pin)) return new Response("Unauthorized", { status: 401 });
+  if ((type !== "in" && type !== "out") || typeof amount !== "number" || amount <= 0)
     return new Response("Bad Request", { status: 400 });
-  }
-  if (!pin || !(await checkPin(pin))) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  
   let balance = Number(await getKV < number > ("balance")) || 0;
   const time = Date.now();
   const newBalance = type === "in" ? balance + amount : balance - amount;

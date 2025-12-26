@@ -12,6 +12,7 @@ export default function MainPage() {
   const [balance, setBalance] = useState(0);
   const [error, setError] = useState("");
 
+  // ตรวจสอบ PIN และโหลด balance
   useEffect(() => {
     const localPin = window.localStorage.getItem("pin");
     fetch("/api/has-pin")
@@ -22,6 +23,7 @@ export default function MainPage() {
         } else if (!localPin) {
           window.location.href = "/lock";
         } else {
+          // check ว่า PIN นี้ถูกไหม
           const res = await fetch("/api/pin-check", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -32,6 +34,7 @@ export default function MainPage() {
             window.localStorage.removeItem("pin");
             window.location.href = "/lock";
           } else {
+            // PIN ผ่าน ดึง balance
             fetch("/api/balance")
               .then(res => res.json())
               .then(x => setBalance(Number(x.balance)))
@@ -82,8 +85,6 @@ export default function MainPage() {
         ยอดใหม่: ฿{(mode === 'in' ? balance + amount : balance - amount).toLocaleString()}
       </div>
       {error && <div className="text-red-500 mt-2">{error}</div>}
-      <a href="/history" className="text-blue-500 underline mt-6 block">ดูประวัติ</a>
-      <a href="/change-pin" className="text-gray-500 underline mt-2 block">เปลี่ยน PIN</a>
     </main>
   );
 }
