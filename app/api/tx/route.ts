@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getBalance, setBalance, saveTx } from '@/lib/kv'
-import { Transaction } from '@/lib/types'
+import { getBalance, setBalance, saveTx } from '../lib/kv'
+import { Transaction } from '../lib/types'
 
 export async function POST(req: Request) {
   const { type, amount } = await req.json()

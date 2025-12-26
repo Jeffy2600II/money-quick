@@ -1,5 +1,5 @@
-import { kv } from '@vercel/kv'
-import { Transaction } from '@/lib/types'
+import { kv } from '..vercel/kv'
+import { Transaction } from '../lib/types'
 
 export default async function History() {
   const keys = await kv.keys('tx:*')
