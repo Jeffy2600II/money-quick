@@ -1,35 +1,62 @@
 import { useState } from "react";
+import Numpad from "./Numpad";
 
-export default function PinInput({ onSubmit }: { onSubmit: (pin: string) => void }) {
+export default function PinInput({
+  onSubmit,
+  min = 4,
+  max = 6,
+}: {
+  onSubmit: (pin: string) => void;
+  min ? : number;
+  max ? : number;
+}) {
   const [input, setInput] = useState("");
-
+  
+  function submitPin(pin: string) {
+    onSubmit(pin);
+    setInput("");
+  }
+  
   function handleNum(n: number) {
-    if (input.length < 6) setInput(inp => inp + n.toString());
+    setInput((prev) => {
+      if (prev.length >= max) return prev;
+      const next = prev + String(n);
+      // ถ้ากรอกครบขั้นต่ำ ให้ส่งอัตโนมัติทันที
+      if (next.length >= min) {
+        // เล็กน้อยหน่วงเวลาเพื่อให้ UI แสดงตัว • ก่อนเรียก callback
+        setTimeout(() => submitPin(next), 50);
+      }
+      return next;
+    });
   }
+  
   function handleBack() {
-    setInput(inp => inp.slice(0, -1));
+    setInput((prev) => prev.slice(0, -1));
   }
+  
   function handleOk() {
-    if (input.length >= 4 && input.length <= 6) {
-      onSubmit(input);
-      setInput(""); // reset for next use
+    if (input.length >= min && input.length <= max) {
+      submitPin(input);
     }
   }
-
+  
   return (
     <div>
       <div className="flex gap-2 justify-center mb-4">
-        {Array.from({length: Math.max(input.length,4)}, (_,i) => (
-          <span key={i} className="text-3xl">{input[i] ? "•" : "○"}</span>
+        {Array.from({ length: Math.max(input.length, min) }, (_, i) => (
+          <span key={i} className="text-3xl">
+            {input[i] ? "•" : "○"}
+          </span>
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-2 w-full max-w-xs py-4">
-        {[1,2,3,4,5,6,7,8,9,0].map((n,i) =>
-          <button key={i} onClick={() => handleNum(n)} type="button">{n}</button>
-        )}
-        <button onClick={handleBack} type="button">⌫</button>
-        <button onClick={handleOk} type="button">✔</button>
-      </div>
+
+      {/* ใช้ Numpad ระดับแอป แต่ซ่อนปุ่ม OK เพราะเราทำ auto-submit */}
+      <Numpad
+        onNum={handleNum}
+        onBack={handleBack}
+        onOk={handleOk}
+        showOk={false}
+      />
     </div>
   );
 }
