@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { upstashGet } from '../../../lib/upstash';
-import { cacheGet, cacheSet } from '../../../lib/upstashCache';
+import { upstashGet } from '../../../../lib/upstash';
+import { cacheGet, cacheSet } from '../../../../lib/upstashCache';
 import bcrypt from 'bcryptjs';
 
 export async function POST(req: Request) {
