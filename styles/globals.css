@@ -346,7 +346,7 @@ html, body {
 .mt-3 { margin-top: 0.75rem; }
 .mt-4 { margin-top: 1rem; }
 
-/* เพิ่มตอนท้าย หรือวางที่เหมาะสมในไฟล์ globals.css */
+/* Additions tuned for the improved Numpad UX (append to globals.css) */
 
 /* pressed state for better touch feedback */
 .numpad-key.pressed {
@@ -364,7 +364,15 @@ html, body {
   pointer-events: none;
 }
 
-/* Slightly reduce pointer-event area to avoid accidental drags */
+/* Slightly reduce pointer-event area to avoid accidental drags and improve precision */
 .numpad-key, .numpad-key-back {
   touch-action: manipulation;
+  -ms-touch-action: manipulation;
+}
+
+/* Focus-visible for keyboard users */
+.numpad-key:focus-visible {
+  outline: 2px solid rgba(0,196,138,0.12);
+  outline-offset: 4px;
+  border-color: var(--accent);
 }
