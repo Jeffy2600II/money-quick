@@ -1,8 +1,7 @@
 /* ==========================================================================
-   Money Quick — Global styles (pin-dot accent + button gray default)
-   - pin-dot borders use accent by default
-   - numpad keys default border is neutral gray; active border uses accent
-   - centered layout, no shadows, slightly reduced key size
+   Money Quick — Global styles (final tweak)
+   - Same as previous layout but adds user-select rules to prevent text selection
+   - Keeps inputs/selectable areas selectable if needed (exceptions)
    ========================================================================== */
 
 /* Import font */
@@ -50,8 +49,26 @@
 *::before,
 *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html, body {
+/* Prevent user text selection across the app for the UI elements */
+/* Keep native inputs/selectable content selectable by exception below */
+html, body, #__next {
   height: 100%;
+  user-select: none; /* prevent text-selection by default */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input, textarea, select, option, [contenteditable="true"] {
+  user-select: text !important; /* allow selection where appropriate */
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
+/* Base typography & smoothing */
+html, body {
   margin: 0;
   padding: 0;
   background: var(--bg);
@@ -70,8 +87,8 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 20px;
+  justify-content: center;   /* vertical centering */
+  padding: 20px;             /* small breathing room from edges */
   background: var(--bg);
 }
 
@@ -114,7 +131,7 @@ html, body {
   display:flex;
   gap: 18px;
   justify-content: center;
-  margin-bottom: 60px; /* space to numpad */
+  margin-bottom: 60px; /* large gap to numpad for clean layout */
 }
 .pin-dot {
   width: var(--pin-dot-size);
@@ -151,34 +168,27 @@ html, body {
 }
 .numpad_cell, .numpad-cell { width: var(--key-size); height: var(--key-size); }
 
-/* Numeric key: default border neutral gray, active border accent */
+/* Numeric key default neutral border, active uses accent */
 .numpad-key {
   width: var(--key-size);
   height: var(--key-size);
   border-radius: 9999px;
   background: transparent;
-  border: var(--thin) solid var(--border); /* neutral default border */
+  border: var(--thin) solid var(--border); /* neutral default */
   display:inline-flex;
   align-items:center;
   justify-content:center;
   cursor:pointer;
   transition: border-color var(--fast) ease;
-  user-select: none;
+  user-select: none; /* ensure digits cannot be selected */
   -webkit-tap-highlight-color: transparent;
   outline: none;
   box-sizing: border-box;
 }
-
-/* no focus ring (per request) */
 .numpad-key:focus { outline: none; }
-
-/* active / focus-visible: border becomes accent */
 .numpad-key:active,
-.numpad-key:focus-visible {
-  border-color: var(--accent); /* active uses site accent color */
-}
+.numpad-key:focus-visible { border-color: var(--accent); } /* active border uses accent */
 
-/* Digit label */
 .numpad-key-label {
   font-size: var(--digit-font-size);
   font-weight: 400;
@@ -187,7 +197,7 @@ html, body {
   user-select: none;
 }
 
-/* Backspace key (icon-only) */
+/* Backspace key (icon only) */
 .numpad-key-back {
   width: var(--key-size);
   height: var(--key-size);
