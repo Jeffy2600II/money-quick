@@ -1,49 +1,53 @@
 /* ==========================================================================
-   Money Quick — Global styles (full, production-ready)
-   - Complete styling for PIN screens, numpad, buttons, logo, feedback states
-   - Uses thin borders (~1px), lively green accent, centered numpad (fit-content)
-   - Backspace icon expected to be Tabler SVG (stroke=currentColor)
-   - Accessibility note: focus outlines are intentionally removed per spec.
-     If you want keyboard focus visible, replace :focus rules with :focus-visible rules.
-   ========================================================================== */
+   Money Quick — Global styles (production-ready, application-level)
+   - Modern, clean, readable layout for PIN screens and numpad
+   - Improved spacing, typography scale, responsive rules
+   - Backspace SVG sized to match digit typography
+   ========================================================================= */
 
 /* Import font */
-@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
 
-/* -------------------------
-   CSS variables / theme
-   ------------------------- */
-:root {
-  /* Color palette */
-  --mq-bg: #ffffff;
-  --mq-page-bg: #ffffff;
-  --mq-text: #0f172a;              /* dark text */
-  --mq-muted: #6b7280;             /* subtitle / hint */
-  --mq-border: rgba(15,23,42,0.06);/* very light gray border */
-  --mq-green: #00c48a;             /* vivid light green (accent) */
-  --mq-green-600: #04a573;         /* stronger green used on border active */
-  --mq-shadow: rgba(16,24,40,0.06);/* subtle shadow */
-  --mq-error: #ef4444;
+:root{
+  /* Colors */
+  --bg: #ffffff;
+  --text: #0f172a;
+  --muted: #6b7280;
+  --border: rgba(15,23,42,0.06);
+  --accent: #00c48a;       /* vivid light green */
+  --accent-strong: #04996f;
+  --error: #ef4444;
 
-  /* Sizes */
+  /* Sizes & rhythm */
+  --page-pad-top: 36px;
+  --logo-gap: 8px;
+  --logo-line1: 34px;
+  --logo-line2: 28px;
+  --prompt-size: 17px;
+
+  /* Key sizes */
+  --key-size: 84px;        /* desktop */
+  --key-size-sm: 68px;     /* mobile */
+
+  --key-gap: 20px;
+
+  /* Typography for digits inside keys */
+  --digit-font-size: 1.5rem; /* ~24px desktop */
+  --digit-font-size-sm: 1.25rem;
+
+  /* Pin dot */
   --pin-dot-size: 18px;
-  --key-size: 96px;               /* desktop key size */
-  --key-size-sm: 76px;            /* mobile key size */
-  --key-gap: 22px;
-  --logo-line1-size: 36px;
-  --logo-line2-size: 30px;
+  --pin-dot-size-sm: 14px;
 
-  /* Border thickness */
-  --thin-border: 1px;
+  /* Border */
+  --thin: 1px;
 
-  /* Transition durations */
+  /* transitions */
   --fast: 120ms;
   --mid: 160ms;
 }
 
-/* -------------------------
-   Global reset + base
-   ------------------------- */
+/* Base reset */
 *,
 *::before,
 *::after { box-sizing: border-box; }
@@ -52,8 +56,8 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  background: var(--mq-page-bg);
-  color: var(--mq-text);
+  background: var(--bg);
+  color: var(--text);
   font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -61,166 +65,93 @@ html, body {
   line-height: 1.25;
 }
 
-/* Base button appearance for app-level consistency */
-button {
-  font-family: inherit;
-  font-size: 1rem;
-  color: inherit;
-  -webkit-tap-highlight-color: transparent;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  padding: 0;
-  margin: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Links styled as buttons / text */
-a { color: inherit; text-decoration: none; }
-
-/* Utility: visually-hidden */
-.sr-only {
-  position: absolute !important;
-  width: 1px; height: 1px;
-  padding: 0; margin: -1px; overflow: hidden;
-  clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
-}
-
-/* -------------------------
-   PIN pages container
-   ------------------------- */
+/* Page container */
 .pin-page {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 34px;            /* top breathing room similar to K+ */
-  background: var(--mq-page-bg);
-  color: var(--mq-text);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding-top: var(--page-pad-top);
+  background: var(--bg);
 }
 
-/* Top spacer (close removed by design, but we keep spacing) */
-.pin-top {
-  width: 100%;
-  max-width: 420px;
-  height: 44px;
-}
+/* Top spacer (close removed) */
+.pin-top { width:100%; max-width:420px; height:44px; }
 
-/* -------------------------
-   Brand / Logo
-   - Two-line textual logo: first line dark, second line green.
-   - Tight vertical rhythm to align with K+ like look.
-   ------------------------- */
+/* Brand area */
 .pin-brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap: var(--logo-gap);
+  margin-bottom: 14px;
 }
-
-/* Text logo - first line (Money) */
-.logo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  line-height: 1;
-}
+.logo { display:flex; flex-direction:column; align-items:center; line-height:1; }
 .logo-line1 {
-  font-size: var(--logo-line1-size);
+  font-size: var(--logo-line1);
   font-weight: 700;
-  color: #111827;
-  letter-spacing: -0.6px;
+  color: var(--text);
   margin: 0;
 }
 .logo-line2 {
-  font-size: var(--logo-line2-size);
+  font-size: var(--logo-line2);
   font-weight: 700;
-  color: var(--mq-green);
-  margin: -6px 0 0 0;
+  color: var(--accent);
+  margin-top: -6px;
 }
 
-/* Prompt text under logo */
+/* Prompt */
 .pin-prompt {
   margin-top: 8px;
-  font-size: 18px;
+  font-size: var(--prompt-size);
   font-weight: 600;
-  color: var(--mq-muted);
-  margin-bottom: 12px;
+  color: var(--muted);
+  margin-bottom: 14px;
   text-align: center;
 }
 
-/* -------------------------
-   PIN dots (indicator)
-   - Outer ring thin ~1px, filled state is full solid circle
-   - No inner gap when filled (full fill)
-   ------------------------- */
+/* PIN dots */
 .pin-dots {
-  display: flex;
+  display:flex;
   gap: 16px;
-  justify-content: center;
+  justify-content:center;
   margin-bottom: 20px;
 }
 .pin-dot {
   width: var(--pin-dot-size);
   height: var(--pin-dot-size);
   border-radius: 9999px;
-  border: var(--thin-border) solid var(--mq-border);
+  border: var(--thin) solid var(--border);
   background: transparent;
+  transition: background var(--fast) ease, border-color var(--fast) ease;
   box-sizing: border-box;
-  transition: background var(--fast) ease, border-color var(--fast) ease, transform var(--mid) ease;
 }
 .pin-dot.filled {
-  background: var(--mq-green);
-  border-color: var(--mq-green);
-  transform: none;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
-/* -------------------------
-   Error / feedback states
-   - error messages and optional shake animation
-   ------------------------- */
+/* Error text */
 .error-text {
-  color: var(--mq-error);
-  font-size: 0.95rem;
+  color: var(--error);
   margin-top: 10px;
+  font-size: 0.95rem;
   text-align: center;
 }
 
-/* subtle shake animation to attach to element on invalid input */
-@keyframes mq-shake {
-  0% { transform: translateX(0); }
-  20% { transform: translateX(-6px); }
-  40% { transform: translateX(6px); }
-  60% { transform: translateX(-4px); }
-  80% { transform: translateX(4px); }
-  100% { transform: translateX(0); }
-}
-.shake {
-  animation: mq-shake 360ms cubic-bezier(.36,.07,.19,.97) both;
-}
-
-/* -------------------------
-   Numpad
-   - Grid centered horizontally using fit-content + margin auto
-   - Key styling: circular, thin border (~1px), no scale on active
-   - Active only changes border-color (and subtle shadow)
-   - Back key: no border at all, icon-only
-   ------------------------- */
+/* Numpad grid — center horizontally using fit-content */
 .numpad-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--key-gap);
   width: -moz-fit-content;
-  width: fit-content;          /* centers the grid when used with margin auto */
+  width: fit-content;
   margin: 0 auto;
-  padding: 0 16px 30px;
+  padding: 0 16px 34px;
   box-sizing: border-box;
 }
 
-/* explicit cell to preserve grid structure for empty slots */
+/* invisible cell for layout symmetry */
 .numpad-cell {
   width: var(--key-size);
   height: var(--key-size);
@@ -232,33 +163,33 @@ a { color: inherit; text-decoration: none; }
   height: var(--key-size);
   border-radius: 9999px;
   background: transparent;
-  border: var(--thin-border) solid var(--mq-border);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+  border: var(--thin) solid var(--border);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
   transition: border-color var(--fast) ease, box-shadow var(--fast) ease;
-  box-sizing: border-box;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  outline: none;               /* focus removed per request */
+  outline: none; /* focus removed per your request */
+  box-sizing: border-box;
 }
 
-/* explicitly remove focus ring; if you want keyboard visibility use :focus-visible */
+/* Remove focus visuals (you asked for no focus ring). If you later want keyboard accessibility, change to :focus-visible */
 .numpad-key:focus { outline: none; box-shadow: none; }
 
-/* active/focus: do not scale or change background, only change border-color */
+/* Active / focus-visible: only change border-color (no background fill, no scale) */
 .numpad-key:active,
 .numpad-key:focus-visible {
-  border-color: var(--mq-green-600);
-  box-shadow: 0 10px 24px var(--mq-shadow);
+  border-color: var(--accent-strong);
+  box-shadow: 0 10px 30px rgba(4,153,111,0.05);
 }
 
-/* Label inside key (digits) — normal weight (400) */
+/* Label (digit) — normal weight, readable size */
 .numpad-key-label {
-  font-size: 1.6rem;
+  font-size: var(--digit-font-size);
   font-weight: 400; /* normal */
-  color: #000;      /* black text as requested */
+  color: #000;
   line-height: 1;
   user-select: none;
 }
@@ -269,68 +200,43 @@ a { color: inherit; text-decoration: none; }
   height: var(--key-size);
   border-radius: 9999px;
   background: transparent;
-  border: none;                 /* explicit: no border */
-  display: inline-flex;
+  border: none;
+  display:inline-flex;
   align-items:center;
   justify-content:center;
   cursor:pointer;
-  transition: none;             /* no visual change on active */
+  transition: none;
   outline: none;
   box-sizing: border-box;
 }
 .numpad-key-back:active,
 .numpad-key-back:focus { background: transparent; box-shadow: none; border: none; }
 
-/* Backspace icon sizing and color */
-.numpad-key-icon svg {
-  width: 28px;
-  height: 28px;
+/* Backspace SVG size: make it visually equal to the digit typography height */
+.numpad-key-icon svg,
+.numpad-back-svg {
+  width: calc(var(--digit-font-size) * 1.15);  /* slightly larger than digit for optical balance */
+  height: calc(var(--digit-font-size) * 1.15);
   display:block;
-  stroke: currentColor;         /* Tabler uses stroke */
-  color: #000;                  /* black icon color */
+  stroke: currentColor;
+  color: #000;
   fill: none;
 }
 
-/* Disabled state */
+/* Disabled visual */
 .numpad-key[disabled],
 .numpad-key-back[disabled] {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
-/* -------------------------
-   Small helper components / app elements
-   ------------------------- */
-
-/* Balance component */
-.balance {
-  font-size: 2.7rem;
-  font-weight: 700;
-  padding: 1.5rem 0;
-  user-select: none;
-}
-
-/* ToggleInOut (basic utility) */
-.toggle-inout {
-  display:flex;
-  gap: 12px;
-  margin-bottom: 18px;
-}
-.toggle-inout button {
-  padding: 0.6rem 0.9rem;
-  border-radius: 10px;
-  color: #fff;
-  background: var(--mq-muted);
-  border: none;
-}
-
-/* ConfirmButton: full-width large primary button */
+/* Confirm primary button (if used elsewhere) */
 .confirm-button {
   width: 100%;
   max-width: 420px;
   padding: 0.9rem 1rem;
   border-radius: 12px;
-  background: var(--mq-green);
+  background: var(--accent);
   color: #fff;
   font-size: 1.05rem;
   font-weight: 600;
@@ -344,23 +250,22 @@ a { color: inherit; text-decoration: none; }
   cursor: not-allowed;
 }
 
-/* small text links */
+/* Small utilities and links */
 .forgot-link {
   margin-top: 12px;
-  color: var(--mq-green);
+  color: var(--accent);
   font-weight: 600;
-  text-decoration: none;
   border-bottom: 2px solid rgba(0,196,138,0.12);
   padding-bottom: 2px;
 }
 
-/* subtle loading overlay (page-level) - used optionally by pages */
+/* Loading overlay (optional, controlled by pages) */
 .loading-overlay {
   position: fixed;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   background: rgba(255,255,255,0.65);
   z-index: 1200;
 }
@@ -369,44 +274,32 @@ a { color: inherit; text-decoration: none; }
   height: 46px;
   border-radius: 9999px;
   border: 4px solid rgba(0,0,0,0.08);
-  border-top-color: var(--mq-green);
+  border-top-color: var(--accent);
   animation: spin 900ms linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* -------------------------
-   Responsive behavior
-   ------------------------- */
+/* Responsive adjustments */
 @media (max-width: 480px) {
   :root {
     --key-size: var(--key-size-sm);
+    --digit-font-size: var(--digit-font-size-sm);
+    --pin-dot-size: 14px;
   }
   .numpad-cell,
   .numpad-key,
   .numpad-key-back {
-    width: var(--key-size-sm);
-    height: var(--key-size-sm);
+    width: var(--key-size);
+    height: var(--key-size);
   }
-  .numpad-key-icon svg { width: 22px; height: 22px; }
-  .logo-line1 { font-size: 28px; }
-  .logo-line2 { font-size: 24px; margin-top: -4px; }
-  .pin-dots { gap: 12px; margin-bottom: 14px; }
-  .pin-dot { width: 14px; height: 14px; }
   .numpad-grid { gap: 14px; padding: 0 12px 22px; }
+  .logo-line1 { font-size: 28px; }
+  .logo-line2 { font-size: 22px; margin-top: -4px; }
 }
 
-/* -------------------------
-   Utilities (small spacing / text helpers)
-   ------------------------- */
+/* Small helpers */
 .text-center { text-align: center; }
 .mt-1 { margin-top: 0.25rem; }
 .mt-2 { margin-top: 0.5rem; }
 .mt-3 { margin-top: 0.75rem; }
 .mt-4 { margin-top: 1rem; }
-.mb-1 { margin-bottom: 0.25rem; }
-.mb-2 { margin-bottom: 0.5rem; }
-.small { font-size: 0.9rem; color: var(--mq-muted); }
-
-/* ==========================================================================
-   End of styles
-   ========================================================================== */
