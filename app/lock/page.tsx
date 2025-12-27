@@ -26,8 +26,8 @@ export default function LockPage() {
   }
   
   function handleForgot() {
-    // ไปหน้า setup (หรือจะเปลี่ยน flow เป็น recovery)
-    window.location.href = "/setup-pin";
+    // นำไปหน้า setup-pin ในโหมด force (เขียนทับรหัสเดิม)
+    window.location.href = "/setup-pin?force=1";
   }
   
   return (
@@ -41,7 +41,7 @@ export default function LockPage() {
         <div className="pin-prompt">กรุณาใส่รหัสผ่าน</div>
       </div>
 
-      <PinInput onSubmit={handleSubmit} requiredLength={6} showForgot onForgot={handleForgot} />
+      <PinInput onSubmit={handleSubmit} requiredLength={6} />
 
       {loading && <div className="pin-loading">กำลังตรวจสอบ...</div>}
       {error && <div className="mt-3 text-red-500">{error}</div>}

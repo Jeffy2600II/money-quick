@@ -1,5 +1,4 @@
 // Client-side wrapper สำหรับ API ที่เกี่ยวกับ PIN
-// ให้ behavior แบบ uniform: timeout, retry(1), และ normalize response
 type ApiResult < T > = {
   ok: boolean;
   data ? : T;
@@ -31,7 +30,6 @@ async function doRequest < T > (input: { url: string;init ? : RequestInit;timeou
         const data = parseJson ? (await res.json()) as T : undefined;
         return { ok: true, data, status };
       } else {
-        // parse error body if possible
         let errMsg = `${status} ${res.statusText}`;
         try {
           const body = await res.text();
@@ -41,11 +39,9 @@ async function doRequest < T > (input: { url: string;init ? : RequestInit;timeou
       }
     } catch (err) {
       lastErr = err;
-      // retry loop continues for transient errors
       if (attempt === retry) {
         return { ok: false, status: 0, error: String(err) };
       }
-      // small backoff
       await new Promise(r => setTimeout(r, 150 * (attempt + 1)));
     }
   }
@@ -70,13 +66,16 @@ export async function hasPin() {
   });
 }
 
-export async function setPin(pin: string) {
+/**
+ * setPin now accepts `force` boolean to overwrite existing PIN (used for forgot-password flow)
+ */
+export async function setPin(pin: string, force: boolean = false) {
   return await doRequest < { ok: boolean } > ({
     url: "/api/set-pin",
     init: {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pin }),
+      body: JSON.stringify({ pin, force }),
     },
   });
 }

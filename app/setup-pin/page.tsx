@@ -1,15 +1,18 @@
 'use client';
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import PinInput from "../../components/PinInput";
 import * as pinClient from "../../lib/pinClient";
 
 export default function SetupPinPage() {
+  const searchParams = useSearchParams();
+  const forceMode = searchParams?.get('force') === '1' || searchParams?.get('force') === 'true';
+  
   const [step, setStep] = useState < 'first' | 'confirm' | 'done' > ('first');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // กำหนด requiredLength=6 เพื่อบังคับรหัส 6 หลัก
   async function handleFirst(pinValue: string) {
     setPin(pinValue);
     setStep('confirm');
@@ -26,17 +29,16 @@ export default function SetupPinPage() {
       return false;
     }
     try {
-      const res = await pinClient.setPin(pinValue);
+      const res = await pinClient.setPin(pinValue, forceMode);
       if (res.ok && res.data?.ok) {
-        // บันทึก PIN ใน localStorage เพื่อให้ล็อกอินอัตโนมัติ
+        // บันทึก localStorage เพื่อเข้าใช้งานอัตโนมัติ
         try { localStorage.setItem('pin', pinValue); } catch {}
         setStep('done');
-        // ไปหน้าแรกทันที
         window.location.href = '/';
       } else {
         setError(res.error || 'ไม่สามารถบันทึก PIN ได้');
       }
-    } catch {
+    } catch (e) {
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่');
     } finally {
       setLoading(false);
