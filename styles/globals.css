@@ -1,11 +1,8 @@
 /* ==========================================================================
-   Money Quick — Global styles (centered, refined spacing, accent-first dots)
-   - Vertical + horizontal centering of entire content
-   - Pin-dot border uses accent color by default
-   - Increased spacing between dots and numpad
-   - Slightly reduced key size for better balance
-   - All shadows removed
-   - Uses height:100% on html/body and .pin-page to avoid vh issues
+   Money Quick — Global styles (pin-dot accent + button gray default)
+   - pin-dot borders use accent by default
+   - numpad keys default border is neutral gray; active border uses accent
+   - centered layout, no shadows, slightly reduced key size
    ========================================================================== */
 
 /* Import font */
@@ -16,7 +13,8 @@
   --bg: #ffffff;
   --text: #0f172a;
   --muted: #6b7280;
-  --accent: #00c48a;         /* main vivid green accent */
+  --border: rgba(15,23,42,0.06);   /* neutral thin border (used for keys default) */
+  --accent: #00c48a;               /* main vivid green accent */
   --accent-strong: #04996f;
   --error: #ef4444;
 
@@ -26,9 +24,9 @@
   --logo-line2: 30px;
   --prompt-size: 18px;
 
-  /* Key sizes (slightly reduced for balance) */
-  --key-size: 88px;         /* desktop key size (reduced a bit) */
-  --key-size-sm: 72px;      /* mobile key size */
+  /* Key sizes */
+  --key-size: 88px;
+  --key-size-sm: 72px;
 
   --key-gap: 22px;
 
@@ -47,9 +45,7 @@
   --fast: 120ms;
 }
 
-/* -------------------------
-   Base reset
-   ------------------------- */
+/* Reset */
 *,
 *::before,
 *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -67,27 +63,22 @@ html, body {
   line-height: 1.25;
 }
 
-/* -------------------------
-   Page container: CENTER everything vertically + horizontally
-   - Use height:100% (not vh) to avoid browser chrome issues
-   ------------------------- */
+/* Page container: centered vertically & horizontally */
 .pin-page {
   height: 100%;
   min-height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;   /* vertical centering */
-  padding: 20px;             /* small breathing room from edges */
+  justify-content: center;
+  padding: 20px;
   background: var(--bg);
 }
 
-/* Keep a small top spacer for legacy layouts but not pushing content down */
+/* Top spacer small so it doesn't push content down */
 .pin-top { width:100%; max-width:420px; height: 10px; }
 
-/* -------------------------
-   Brand / Logo area — tidy, readable
-   ------------------------- */
+/* Brand area */
 .pin-brand {
   display:flex;
   flex-direction:column;
@@ -118,35 +109,28 @@ html, body {
   text-align: center;
 }
 
-/* -------------------------
-   Pin dots (indicator)
-   - Use accent color for border by default (not gray)
-   - Filled state is same accent (full fill)
-   - Increased spacing below to separate from numpad
-   ------------------------- */
+/* PIN dots — accent border by default; filled uses same accent */
 .pin-dots {
   display:flex;
   gap: 18px;
   justify-content: center;
-  margin-bottom: 60px; /* larger gap to numpad for cleaner layout */
+  margin-bottom: 60px; /* space to numpad */
 }
 .pin-dot {
   width: var(--pin-dot-size);
   height: var(--pin-dot-size);
   border-radius: 9999px;
-  border: var(--thin) solid var(--accent); /* accent border from start */
+  border: var(--thin) solid var(--accent); /* accent used from start */
   background: transparent;
   transition: background var(--fast) ease, border-color var(--fast) ease;
   box-sizing: border-box;
 }
 .pin-dot.filled {
-  background: var(--accent); /* filled uses same accent */
+  background: var(--accent);
   border-color: var(--accent);
 }
 
-/* -------------------------
-   Error / feedback
-   ------------------------- */
+/* Error text */
 .error-text {
   color: var(--error);
   font-size: 0.95rem;
@@ -154,9 +138,7 @@ html, body {
   text-align: center;
 }
 
-/* -------------------------
-   Numpad grid (centered)
-   ------------------------- */
+/* Numpad grid */
 .numpad-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -167,22 +149,15 @@ html, body {
   padding: 0 12px 36px;
   box-sizing: border-box;
 }
-.numpad-cell {
-  width: var(--key-size);
-  height: var(--key-size);
-}
+.numpad_cell, .numpad-cell { width: var(--key-size); height: var(--key-size); }
 
-/* -------------------------
-   Numeric key styling
-   - Circular, thin border, accent on active border only
-   - No shadows, no scale transform
-   ------------------------- */
+/* Numeric key: default border neutral gray, active border accent */
 .numpad-key {
   width: var(--key-size);
   height: var(--key-size);
   border-radius: 9999px;
   background: transparent;
-  border: var(--thin) solid var(--accent); /* use accent for border to match dots (uniform) */
+  border: var(--thin) solid var(--border); /* neutral default border */
   display:inline-flex;
   align-items:center;
   justify-content:center;
@@ -194,16 +169,16 @@ html, body {
   box-sizing: border-box;
 }
 
-/* Do not show focus ring */
+/* no focus ring (per request) */
 .numpad-key:focus { outline: none; }
 
-/* Active only changes border color slightly deeper (accent-strong) */
+/* active / focus-visible: border becomes accent */
 .numpad-key:active,
 .numpad-key:focus-visible {
-  border-color: var(--accent-strong);
+  border-color: var(--accent); /* active uses site accent color */
 }
 
-/* Digit styling */
+/* Digit label */
 .numpad-key-label {
   font-size: var(--digit-font-size);
   font-weight: 400;
@@ -212,10 +187,7 @@ html, body {
   user-select: none;
 }
 
-/* -------------------------
-   Backspace key (icon only)
-   - no border, no active effect
-   ------------------------- */
+/* Backspace key (icon-only) */
 .numpad-key-back {
   width: var(--key-size);
   height: var(--key-size);
@@ -233,7 +205,7 @@ html, body {
 .numpad-key-back:active,
 .numpad-key-back:focus { background: transparent; }
 
-/* Backspace SVG scaled to match digit height */
+/* Backspace SVG sizing */
 .numpad-key-icon svg,
 .numpad-back-svg {
   width: calc(var(--digit-font-size) * 1.25);
@@ -248,9 +220,7 @@ html, body {
 .numpad-key[disabled],
 .numpad-key-back[disabled] { opacity: 0.45; cursor: not-allowed; }
 
-/* -------------------------
-   Confirm button (if used)
-   ------------------------- */
+/* Confirm button */
 .confirm-button {
   width: 100%;
   max-width: 460px;
@@ -274,7 +244,7 @@ html, body {
   padding-bottom: 2px;
 }
 
-/* Loading overlay (optional) */
+/* Loading overlay */
 .loading-overlay {
   position: fixed;
   inset: 0;
@@ -294,9 +264,7 @@ html, body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* -------------------------
-   Responsive adjustments
-   ------------------------- */
+/* Responsive */
 @media (max-width: 480px) {
   :root {
     --key-size: var(--key-size-sm);
