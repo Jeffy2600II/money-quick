@@ -32,8 +32,8 @@ export default function LoaderProvider({ children }: { children: React.ReactNode
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState < string | undefined > ('กำลังโหลด...');
   
-  // Default minimum display duration (ms). Set to 400ms as requested.
-  const defaultMinDurationRef = useRef < number > (400);
+  // Default minimum display duration (ms). Set to 600ms as requested.
+  const defaultMinDurationRef = useRef < number > (600);
   
   // timestamp when loader was last shown
   const lastShownAtRef = useRef < number > (0);
