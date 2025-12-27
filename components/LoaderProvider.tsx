@@ -44,7 +44,8 @@ export default function LoaderProvider({ children }: { children: React.ReactNode
       <div className={`mq-loader-root ${visible ? 'visible' : ''}`} aria-hidden={!visible}>
         <div className="mq-loader-backdrop" />
         <div className="mq-loader-card" role="status" aria-live="polite">
-          <div className="mq-loader-logo">
+          {/* ใช้โครงสร้าง .logo เดียวกับที่ใช้ทั่วแอป เพื่อให้ CSS โลโก้หลักใช้ได้ตรงกัน */}
+          <div className="logo">
             <div className="logo-line1">Money</div>
             <div className="logo-line2">quick</div>
           </div>
