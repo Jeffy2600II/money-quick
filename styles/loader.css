@@ -1,6 +1,7 @@
 /* Loader overlay styles (แยกไฟล์เพื่อความยืดหยุ่น)
-   Updated: เพิ่มขนาดตัวอักษรของโลโก้และข้อความสถานะ,
-   เปลี่ยน backdrop ให้เป็นสีขาวทึบเพื่อการอ่านที่ชัดขึ้น
+   - ปรับขนาดโลโก้และข้อความให้ใหญ่ขึ้นเพื่อเน้น readability ตามดีไซน์หน้าล็อก
+   - เปลี่ยน overlay backdrop ให้เป็นสีขาวทึบ (opaque) ตามคำขอ
+   - ไม่เปลี่ยนรูปแบบการ์ดด้านใน (พื้นหลัง การจัดวาง ไม่มีขอบเพิ่ม)
 */
 
 .mq-loader-root {
@@ -18,77 +19,94 @@
   pointer-events: auto;
 }
 
-/* backdrop ให้ทึบเป็นสีขาว (opaque) เพื่อความคอนทราสต์สูง
-   — เปลี่ยนจากโปร่งใส + blur มาเป็นแผ่นขาวทึบตามคำขอ */
+/* BACKDROP: ขาวทึบเต็มหน้าจอ (opaque) เพื่อปิดการมองเห็นเบื้องหลังอย่างชัดเจน */
 .mq-loader-backdrop {
   position: absolute;
   inset: 0;
-  background: #ffffff; /* ขาวทึบ */
-  /* หากต้องการลดความแข็งให้ใส่ opacity เป็น 0.98 หรือ similar */
-  backdrop-filter: none; /* ไม่มี blur เพื่อคมชัด */
+  background: #ffffff; /* opaque white */
+  /* เก็บไว้ถ้าต้องการ blur ในอนาคต */
+  backdrop-filter: none;
 }
 
-/* card กึ่งกลาง — ขยายขนาดเล็กน้อยเพื่อรองรับตัวอักษรใหญ่ */
+/* card กึ่งกลาง - ไม่เปลี่ยนพื้นหลัง/ขอบตามคำขอ */
 .mq-loader-card {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 22px 32px;
-  border-radius: 14px;
-  background: #ffffff; /* ตามดีไซน์หน้าพิน */
+  padding: 20px 30px;
+  border-radius: 12px;
+  background: #ffffff;
   min-width: 260px;
   max-width: 92%;
   box-sizing: border-box;
   z-index: 1;
   /* ไม่มี shadow ตามที่ต้องการ */
-  border: 1px solid rgba(15,23,42,0.04);
 }
 
-/* โลโก้ (reuse รูปแบบโลโก้หน้าอื่น) */
-/* ขนาดโลโก้/ตัวอักษรเพิ่มขึ้นเพื่อเน้นความชัดเจน */
+/* โลโก้: ขนาดใหญ่ขึ้นเพื่อให้สอดคล้องกับหน้าล็อก */
 .mq-loader-logo .logo-line1 {
   font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
-  font-size: 26px; /* เพิ่มขึ้นจาก 20 */
-  font-weight: 800;
+  font-size: 28px; /* ขยายจาก 20px -> 28px */
+  font-weight: 700;
   color: #111827;
   line-height: 1;
   margin: 0;
 }
 .mq-loader-logo .logo-line2 {
   font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
-  font-size: 22px; /* เพิ่มขึ้นจาก 18 */
-  font-weight: 800;
+  font-size: 24px; /* ขยายจาก 18px -> 24px */
+  font-weight: 700;
   color: #00c48a;
   margin-top: -6px;
 }
 
-/* ข้อความสถานะ (muted color) — ขนาดใหญ่ขึ้นเพื่อให้อ่านง่าย */
+/* ข้อความสถานะ (ขนาดใหญ่ขึ้นและเน้น readability) */
 .mq-loader-message {
   color: #6b7280;
-  font-size: 18px; /* เพิ่มขึ้นจาก 15 */
-  font-weight: 700; /* หนาขึ้นเล็กน้อยเพื่อความคม */
+  font-size: 18px; /* ขยายจาก 15px -> 18px */
+  font-weight: 700; /* เน้นให้ชัดเจนขึ้น */
   text-align: center;
   white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* ปรับขนาด spinner เล็กน้อยให้สมดุลกับข้อความใหญ่ */
+/* สปินเนอร์ ปรับขนาดเล็กน้อยให้สมดุลกับโลโก้ */
 .loading-spinner {
-  width: 54px; /* ขยายจาก 46px */
-  height: 54px;
+  width: 52px;
+  height: 52px;
   border-radius: 9999px;
-  border: 5px solid rgba(0,0,0,0.08);
+  border: 4px solid rgba(0,0,0,0.08);
   border-top-color: var(--accent);
   animation: spin 900ms linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ปรับบนมือถือ: คงความใหญ่แต่พอเหมาะ */
+/* ปรับ padding / sizing ภายในการ์ด เพื่อให้ตัวอักษรขนาดใหญ่ไม่ชนขอบ */
+.mq-loader-card {
+  padding: 22px 32px;
+}
+
+/* ปรับบนมือถือ — ลดขนาดให้อ่านได้พอดี */
 @media (max-width: 480px) {
   .mq-loader-card { padding: 16px 20px; min-width: 220px; }
   .mq-loader-logo .logo-line1 { font-size: 22px; }
   .mq-loader-logo .logo-line2 { font-size: 18px; margin-top: -4px; }
   .mq-loader-message { font-size: 16px; }
-  .loading-spinner { width: 46px; height: 46px; border-width: 4px; }
+  .loading-spinner { width: 44px; height: 44px; }
+}
+
+/* เพิ่มการเปลี่ยนแปลงเล็กน้อยเมื่อ overlay ปรากฏ (สลัวเข้า / ออก) */
+.mq-loader-root.visible .mq-loader-card {
+  transform: translateY(0);
+  opacity: 1;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+.mq-loader-card {
+  transform: translateY(6px);
+  opacity: 0.98;
+  transition: opacity 160ms ease, transform 160ms ease;
 }
