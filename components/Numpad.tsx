@@ -26,14 +26,16 @@ export default function Numpad({
     leftCell, 0, 'back'
   ];
 
-  // pressedIndex for styling feedback
   const [pressedIndex, setPressedIndex] = useState<number | null>(null);
 
   /**
-   * activePointerRef stores per-active-pointer info:
-   * { pointerId, index, target, startX, startY, cancelled }
-   * - cancelled becomes true when we detect a vertical drag (possible pull-to-refresh)
-   *   or when movement indicates the user intends to scroll/drag away.
+   * activePointerRef stores:
+   *  - pointerId, index, target
+   *  - startX/startY
+   *  - startTime
+   *  - cancelled (bool)
+   *  - candidateSince (timestamp) when movement first crossed cancel criteria
+   *  - buttonRect: DOMRect of the button at pointerdown time
    */
   const activePointerRef = useRef<{
     pointerId: number;
@@ -41,7 +43,10 @@ export default function Numpad({
     target: EventTarget | null;
     startX: number;
     startY: number;
+    startTime: number;
     cancelled: boolean;
+    candidateSince: number | null;
+    buttonRect: DOMRect | null;
   } | null>(null);
 
   function triggerActionForCell(c: number | 'back' | 'ok') {
@@ -53,10 +58,14 @@ export default function Numpad({
 
   function handlePointerDown(e: React.PointerEvent, idx: number, c: number | 'back' | 'ok') {
     if (disabled) return;
-    // mark pressed for style
     setPressedIndex(idx);
     try {
       (e.target as Element).setPointerCapture?.(e.pointerId);
+    } catch {}
+    // capture button rect at the start
+    let rect: DOMRect | null = null;
+    try {
+      rect = (e.target as Element).getBoundingClientRect();
     } catch {}
     activePointerRef.current = {
       pointerId: e.pointerId,
@@ -64,7 +73,10 @@ export default function Numpad({
       target: e.target,
       startX: e.clientX,
       startY: e.clientY,
+      startTime: Date.now(),
       cancelled: false,
+      candidateSince: null,
+      buttonRect: rect,
     };
   }
 
@@ -76,47 +88,84 @@ export default function Numpad({
     const dx = e.clientX - active.startX;
     const dy = e.clientY - active.startY;
 
-    // Increased thresholds to make cancellation less sensitive:
-    // - Vertical movement must exceed VERTICAL_CANCEL_THRESHOLD (px) AND be clearly more vertical than horizontal.
-    // - Horizontal movement must exceed HORIZONTAL_CANCEL_THRESHOLD (px).
-    const VERTICAL_CANCEL_THRESHOLD = 28; // increased from 12 -> harder to cancel by slight vertical drag
-    const HORIZONTAL_CANCEL_THRESHOLD = 96; // increased from 48 -> harder to cancel by slight horizontal move
+    /**
+     * Conservative (harder-to-cancel) thresholds and rules:
+     * - Vertical threshold relatively large (VERTICAL_CANCEL_THRESHOLD)
+     * - Horizontal threshold large (HORIZONTAL_CANCEL_THRESHOLD)
+     * - Allow small movement inside an extended button rect (EXTEND_MARGIN)
+     * - Require movement to be sustained for SUSTAIN_MS before cancelling
+     */
+    const VERTICAL_CANCEL_THRESHOLD = 40;    // px (bigger -> harder to cancel)
+    const HORIZONTAL_CANCEL_THRESHOLD = 120; // px (bigger -> harder to cancel)
+    const EXTEND_MARGIN = 22;                // px: allow this extra leeway around button
+    const SUSTAIN_MS = 90;                   // ms: must hold movement beyond threshold for this long
 
-    if (!active.cancelled && Math.abs(dy) > VERTICAL_CANCEL_THRESHOLD && Math.abs(dy) > Math.abs(dx) * 1.2) {
-      // Consider it a deliberate vertical gesture (pull-to-refresh / scroll) only if vertical dominates
-      active.cancelled = true;
-      setPressedIndex(null);
-      try {
-        (active.target as Element)?.releasePointerCapture?.(active.pointerId);
-      } catch {}
-      activePointerRef.current = active;
-      return;
+    // If buttonRect is available, compute extended rect
+    const rect = active.buttonRect;
+    let insideExtendedRect = true;
+    if (rect) {
+      insideExtendedRect = (
+        e.clientX >= rect.left - EXTEND_MARGIN &&
+        e.clientX <= rect.right + EXTEND_MARGIN &&
+        e.clientY >= rect.top - EXTEND_MARGIN &&
+        e.clientY <= rect.bottom + EXTEND_MARGIN
+      );
     }
 
-    if (!active.cancelled && Math.abs(dx) > HORIZONTAL_CANCEL_THRESHOLD) {
-      active.cancelled = true;
-      setPressedIndex(null);
-      try {
-        (active.target as Element)?.releasePointerCapture?.(active.pointerId);
-      } catch {}
-      activePointerRef.current = active;
-      return;
+    // Determine cancel reason(s)
+    let verticalCancel = false;
+    if (Math.abs(dy) > VERTICAL_CANCEL_THRESHOLD && Math.abs(dy) > Math.abs(dx) * 1.3) {
+      verticalCancel = true;
+    }
+    let horizontalCancel = false;
+    if (Math.abs(dx) > HORIZONTAL_CANCEL_THRESHOLD) {
+      horizontalCancel = true;
+    }
+    let outOfBoundsCancel = !insideExtendedRect;
+
+    // Final cancel: only if any cancel condition true AND sustained OR clearly out of extended bounds
+    if ((verticalCancel || horizontalCancel || outOfBoundsCancel)) {
+      const now = Date.now();
+      // immediate cancel if pointer is far outside extended rect (strong signal)
+      const FAR_OUT_MARGIN = 96;
+      if (rect && (e.clientX < rect.left - FAR_OUT_MARGIN || e.clientX > rect.right + FAR_OUT_MARGIN || e.clientY < rect.top - FAR_OUT_MARGIN || e.clientY > rect.bottom + FAR_OUT_MARGIN)) {
+        active.cancelled = true;
+        setPressedIndex(null);
+        try { (active.target as Element)?.releasePointerCapture?.(active.pointerId); } catch {}
+        activePointerRef.current = active;
+        return;
+      }
+
+      // otherwise check sustain: set candidateSince if not set
+      if (!active.candidateSince) {
+        active.candidateSince = now;
+      } else if (now - active.candidateSince >= SUSTAIN_MS) {
+        // sustained beyond threshold -> cancel
+        active.cancelled = true;
+        setPressedIndex(null);
+        try { (active.target as Element)?.releasePointerCapture?.(active.pointerId); } catch {}
+        activePointerRef.current = active;
+        return;
+      }
+    } else {
+      // no cancel condition — reset candidate timer
+      active.candidateSince = null;
+      // keep pressedIndex as is
     }
   }
 
   function handlePointerUp(e: React.PointerEvent, idx: number, c: number | 'back' | 'ok') {
     const active = activePointerRef.current;
-    // If no active pointer, maybe pointerup fired after pointercancel; ignore
     if (!active) {
       setPressedIndex(null);
       return;
     }
 
-    // Only trigger if this pointer is the same and not cancelled and index matches
+    // Trigger only when not cancelled, and pointer matches the recorded one
     if (!active.cancelled && active.pointerId === e.pointerId && active.index === idx) {
       triggerActionForCell(c);
     } else {
-      // If released over the same element even without capture, and not cancelled, allow it
+      // fallback: if not cancelled and released over same visual button, allow it
       if (!active.cancelled && idx === pressedIndex) {
         triggerActionForCell(c);
       }
@@ -139,10 +188,10 @@ export default function Numpad({
   }
 
   function handlePointerLeave(e: React.PointerEvent, idx: number) {
-    // If pointer moves outside the button quickly, we keep visual feedback lightly,
-    // but do not auto-trigger. The pointermove logic will cancel for large movements.
+    // don't aggressively clear pressed visual — user may return finger quickly.
     const active = activePointerRef.current;
     if (!active || active.index !== idx) {
+      // small delay could be introduced but keep simple: just clear visual
       setPressedIndex(null);
     }
   }
