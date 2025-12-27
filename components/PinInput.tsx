@@ -3,33 +3,26 @@ import { useEffect, useRef, useState } from "react";
 import Numpad from "./Numpad";
 
 /**
- * PinInput
- * - requiredLength: จำนวนหลักคงที่ (ค่าเริ่มต้น 6)
+ * PinInput: requiredLength default 6
  * - auto-submit เมื่อครบ requiredLength
- * - ป้องกัน double-submit / แสดง loading
- * - ไม่มีฟีเจอร์ลายนิ้วมือ (removed)
+ * - ไม่มีข้อความ "กำลังประมวลผล" ใด ๆ ในตัว component นี้
+ * - ถ้า onSubmit คืนค่า false / throw -> input คงไว้และ page-level จะแสดง error
  */
 export default function PinInput({
   onSubmit,
   requiredLength = 6,
-  showForgot,
-  onForgot,
 }: {
   onSubmit: (pin: string) => void | Promise<void | boolean>;
-  requiredLength?: number; // default 6
-  showForgot?: boolean;
-  onForgot?: () => void;
+  requiredLength?: number;
 }) {
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
   const pendingRef = useRef(false);
 
-  // auto-submit เมื่อครบ length
   useEffect(() => {
     if (input.length === requiredLength && !pendingRef.current) {
       const t = setTimeout(() => {
         void submit(input);
-      }, 90);
+      }, 80);
       return () => clearTimeout(t);
     }
   }, [input, requiredLength]);
@@ -38,20 +31,18 @@ export default function PinInput({
     if (pendingRef.current) return;
     if (pin.length !== requiredLength) return;
     pendingRef.current = true;
-    setLoading(true);
     try {
       const res = await onSubmit(pin);
       if (res === false) {
         // failed -> keep input for user to edit
       } else {
-        // success -> clear input
+        // success -> clear input silently
         setInput("");
       }
     } catch {
-      // page-level handler will show errors
+      // page-level will show error; keep input
     } finally {
       pendingRef.current = false;
-      setLoading(false);
     }
   }
 
@@ -74,14 +65,13 @@ export default function PinInput({
         })}
       </div>
 
-      {loading && <div className="pin-loading">กำลังประมวลผล...</div>}
-
+      {/* no loading text here — pages handle errors and redirect */}
       <Numpad
         onNum={handleNum}
         onBack={handleBack}
         onOk={() => submit(input)}
         showOk={false}
-        disabled={loading}
+        disabled={false}
       />
     </div>
   );

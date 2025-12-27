@@ -6,10 +6,6 @@ type Props = {
   onNum: (n: number) => void;
   onBack: () => void;
   onOk ? : () => void;
-  /**
-   * ถ้า false จะซ่อนปุ่ม OK (ใช้สำหรับ PIN ที่ auto-submit)
-   * ค่าเริ่มต้น: true เพื่อความเข้ากันได้ย้อนหลังกับโค้ดเดิม
-   */
   showOk ? : boolean;
   disabled ? : boolean;
 };
@@ -22,7 +18,6 @@ export default function Numpad({
   showOk = true,
   disabled = false,
 }: Props) {
-  // ตำแหน่งแถวล่าง: ถ้า showOk=true ให้ใส่ 'ok' ทางซ้ายสุด แถวล่างเป็น [left, 0, right]
   const leftCell = showOk ? 'ok' : null;
   const rightCell = 'back';
   
@@ -33,29 +28,31 @@ export default function Numpad({
     leftCell, 0, rightCell
   ];
   
+  // backspace SVG
+  const BackSvg = () => (
+    <svg width="28" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M20 7H8L4 12l4 5h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M15 9l-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M11 9l4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+  
   return (
     <div className="numpad-grid" role="group" aria-label="numpad">
       {cells.map((c, idx) => {
-        if (c === null) {
-          return <div key={idx} className="numpad-cell" />;
-        }
+        if (c === null) return <div key={idx} className="numpad-cell" />;
 
         const isNum = typeof c === 'number';
         const isBack = c === 'back';
         const isOk = c === 'ok';
 
-        // ถ้าเป็น OK แต่ไม่มี onOk -> แสดงเป็นช่องว่างเพื่อหลีกเลี่ยงการส่ง undefined
-        if (isOk && !onOk) {
-          return <div key={idx} className="numpad-cell" />;
-        }
-
-        const label = isNum ? String(c) : isBack ? '⌫' : '✔';
+        if (isOk && !onOk) return <div key={idx} className="numpad-cell" />;
 
         return (
           <button
             key={idx}
             type="button"
-            aria-label={isNum ? `Number ${label}` : isBack ? 'Backspace' : 'Confirm'}
+            aria-label={isNum ? `Number ${c}` : isBack ? 'Backspace' : 'Confirm'}
             className="numpad-key"
             onClick={() => {
               if (disabled) return;
@@ -65,7 +62,7 @@ export default function Numpad({
             }}
             disabled={disabled}
           >
-            <span className="numpad-key-label">{label}</span>
+            {isBack ? <span className="numpad-key-icon"><BackSvg/></span> : <span className="numpad-key-label">{isNum ? String(c) : '✔'}</span>}
           </button>
         );
       })}
