@@ -9,15 +9,14 @@ import { fetchWithTimeout } from '../lib/fetcher';
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="th">
+      <head>
+        {/* If you have a dedicated API hostname, consider adding preconnect here:
+            <link rel="preconnect" href="https://api.example.com" />
+            (left out because origin may be same)
+        */}
+      </head>
       <body>
-        <SWRConfig value={{
-          fetcher: (resource: string, init?: any) => fetchWithTimeout(resource, init),
-          dedupingInterval: 10_000,        // de-duplicate identical requests for 10s
-          focusThrottleInterval: 60_000,   // don't revalidate on focus more than once per minute
-          revalidateOnFocus: false,        // avoid unnecessary revalidations in mobile
-          shouldRetryOnError: false,
-          errorRetryCount: 1,
-        }}>
+        <SWRConfig value={{ fetcher: (resource: string, init?: any) => fetchWithTimeout(resource, init) }}>
           <PopupProvider>
             <LoaderProvider>
               {children}
