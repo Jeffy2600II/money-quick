@@ -6,11 +6,10 @@ type UpstashOptions = {
 };
 
 /**
- * Ensure a single Redis client is reused across lambda invocations.
- * This avoids overhead of recreating client on each invocation.
+ * Reuse Redis client across warm lambda instances (globalThis)
  */
 function getClient(): Redis {
-  // @ts-ignore global augmentation
+  // @ts-ignore
   if ((globalThis as any).__upstash_redis_client) {
     return (globalThis as any).__upstash_redis_client as Redis;
   }
@@ -22,13 +21,13 @@ function getClient(): Redis {
   }
   
   const client = new Redis({ url, token });
+  // @ts-ignore
   (globalThis as any).__upstash_redis_client = client;
   return client;
 }
 
 /**
- * Small helper: perform an Upstash operation with timeout and optional retries.
- * We wrap client methods that return Promises.
+ * Retry + timeout wrapper (JS-level). Upstash uses fetch internally.
  */
 async function withTimeoutAndRetry < T > (fn: () => Promise < T > , timeoutMs = 5000, retries = 1): Promise < T > {
   let attempt = 0;
@@ -36,27 +35,26 @@ async function withTimeoutAndRetry < T > (fn: () => Promise < T > , timeoutMs = 
   while (attempt <= retries) {
     attempt++;
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const id = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      // Note: Upstash uses fetch internally; AbortController won't necessarily cancel it,
-      // but we still provide a timeout guard at JS level.
       const p = fn();
-      const res = await Promise.race([
+      // We race with an abort promise to get a controlled timeout error
+      const result = await Promise.race([
         p,
         new Promise < never > ((_, rej) => {
           controller.signal.addEventListener('abort', () => rej(new Error('timeout')));
         }),
       ]);
-      clearTimeout(timer);
-      return res as T;
-    } catch (e) {
-      clearTimeout(timer);
-      lastErr = e;
-      // small backoff before retry
+      clearTimeout(id);
+      return result as T;
+    } catch (err) {
+      clearTimeout(id);
+      lastErr = err;
       if (attempt <= retries) {
         const backoff = Math.min(200 * Math.pow(2, attempt), 1000);
+        // small jitter
         // eslint-disable-next-line no-await-in-loop
-        await new Promise((r) => setTimeout(r, backoff + Math.random() * 80));
+        await new Promise(res => setTimeout(res, backoff + Math.random() * 80));
         continue;
       }
       throw lastErr;
@@ -65,11 +63,10 @@ async function withTimeoutAndRetry < T > (fn: () => Promise < T > , timeoutMs = 
   throw lastErr;
 }
 
-/* Exposed helpers */
+/* ---------- Helpers ---------- */
 
 /**
- * Get a value (parsed as JSON if possible) for a key.
- * If parseJSON=false returns raw string.
+ * Get key (parse JSON by default)
  */
 export async function upstashGet(key: string, opts ? : UpstashOptions & { parseJSON ? : boolean }) {
   const client = getClient();
@@ -88,8 +85,7 @@ export async function upstashGet(key: string, opts ? : UpstashOptions & { parseJ
 }
 
 /**
- * Set a value. If ttlSeconds provided, set EX.
- * Stringify value if object.
+ * Set key (stringify objects)
  */
 export async function upstashSet(key: string, value: unknown, ttlSeconds ? : number, opts ? : UpstashOptions) {
   const client = getClient();
@@ -97,14 +93,13 @@ export async function upstashSet(key: string, value: unknown, ttlSeconds ? : num
   const retries = opts?.retries ?? 1;
   const val = typeof value === 'string' ? value : JSON.stringify(value);
   if (typeof ttlSeconds === 'number') {
-    // setex style
     return withTimeoutAndRetry(() => client.set(key, val, { ex: ttlSeconds }) as Promise < any > , timeoutMs, retries);
   }
   return withTimeoutAndRetry(() => client.set(key, val) as Promise < any > , timeoutMs, retries);
 }
 
 /**
- * Delete key(s)
+ * Delete keys
  */
 export async function upstashDel(...keys: string[]) {
   const client = getClient();
@@ -112,30 +107,34 @@ export async function upstashDel(...keys: string[]) {
 }
 
 /**
- * Multi-get (if client supports mget)
- * Use this to reduce round-trips when fetching many keys.
+ * Multi-get (reduce roundtrips)
  */
 export async function upstashMGet(keys: string[], opts ? : UpstashOptions) {
   const client = getClient();
-  // Upstash redis has mget command
-  return withTimeoutAndRetry(() => (client.mget ? (client.mget(keys) as Promise < any[] > ) : Promise.all(keys.map(k => client.get(k)))) as Promise < any > , opts?.timeoutMs ?? 4000, opts?.retries ?? 1);
+  const timeoutMs = opts?.timeoutMs ?? 4000;
+  const retries = opts?.retries ?? 1;
+  // prefer mget if available
+  // @ts-ignore
+  if (typeof client.mget === 'function') {
+    // client.mget returns an array with values (strings or null)
+    return withTimeoutAndRetry(() => (client.mget(keys) as Promise < any[] > ), timeoutMs, retries);
+  }
+  // fallback: parallel gets (Promise.all)
+  return withTimeoutAndRetry(() => Promise.all(keys.map(k => client.get(k))), timeoutMs, retries);
 }
 
 /**
- * Pipeline / multiple commands execution (when supported)
- * Example usage: pipeline([['set', key, val], ['expire', key, 60]])
- * Note: Upstash library may not expose raw pipeline; if not, fallback to sequential or multi()
+ * Pipeline / multi-exec (reduce roundtrips on many commands)
+ * Accept commands like: [['set', key, value], ['expire', key, 60]]
  */
 export async function upstashPipeline(commands: Array < [string, ...any[]] > , opts ? : UpstashOptions) {
   const client = getClient();
   const timeoutMs = opts?.timeoutMs ?? 4000;
   const retries = opts?.retries ?? 1;
   
-  // Try using `multi` if available
+  // try multi() if provided by client
   // @ts-ignore
   if (typeof client.multi === 'function') {
-    // client.multi().exec() style
-    // Build commands
     // @ts-ignore
     const multi = client.multi();
     for (const cmd of commands) {
@@ -146,7 +145,7 @@ export async function upstashPipeline(commands: Array < [string, ...any[]] > , o
     return withTimeoutAndRetry(() => multi.exec(), timeoutMs, retries);
   }
   
-  // Fallback: sequential exec but still with timeout/retry
+  // fallback sequentially (still better than many network calls in user code)
   const results: any[] = [];
   for (const cmd of commands) {
     const [name, ...args] = cmd;
