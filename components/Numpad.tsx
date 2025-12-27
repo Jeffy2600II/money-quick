@@ -1,3 +1,4 @@
+'use client';
 import React from "react";
 
 type Props = {
@@ -17,43 +18,53 @@ const defaultKeys: (number | "back" | "ok" | null)[][] = [
   [1, 2, 3],
   [4, 5, 6],
   [7, 8, 9],
-  [0, "back", "ok"]
+  [null, 0, "back"]
 ];
 
 export default function Numpad({
-  value,
   onNum,
   onBack,
   onOk,
   showOk = true,
   disabled = false,
 }: Props) {
-  const keys = defaultKeys.map(row =>
-    row.map(k => (k === "ok" && !showOk ? null : k))
+  // ถ้า showOk ให้แสดงปุ่ม ok ทางซ้ายของแถวล่าง
+  const keys = defaultKeys.map((row, ri) =>
+    row.map((k, ci) => {
+      if (ri === 3 && ci === 0 && showOk) return "ok";
+      return k;
+    })
   );
   
   return (
-    <div className="grid grid-cols-3 gap-2 w-full max-w-xs py-4">
+    <div className="numpad-grid" role="group" aria-label="numpad">
       {keys.flat().map((k, i) => {
-        if (k === null) return <div key={i} />;
-        const content = k === "back" ? "⌫" : k === "ok" ? "✔" : String(k);
+        if (k === null) {
+          return <div key={i} className="numpad-cell" />;
+        }
+
+        const isNum = typeof k === "number";
+        const label = isNum ? String(k) : k === "back" ? "⌫" : "✔";
+
         const handleClick = () => {
           if (disabled) return;
-          if (typeof k === "number") onNum(k);
+          if (isNum) onNum(k as number);
           else if (k === "back") onBack();
           else if (k === "ok" && onOk) onOk();
         };
+
+        const aria = isNum ? `Number ${label}` : k === "back" ? "Backspace" : "Confirm";
+
         return (
           <button
             key={i}
             type="button"
-            aria-label={typeof k === "number" ? `Number ${k}` : String(k)}
+            aria-label={aria}
+            className="numpad-key"
             onClick={handleClick}
-            className={`text-2xl rounded h-14 flex items-center justify-center focus:outline-none ${disabled ? "opacity-50 cursor-not-allowed" : "bg-[#232e43] text-white"}`}
-            style={{ height: 54 }}
             disabled={disabled}
           >
-            {content}
+            <span className="numpad-key-label">{label}</span>
           </button>
         );
       })}

@@ -3,10 +3,11 @@ import { useEffect, useRef, useState } from "react";
 import Numpad from "./Numpad";
 
 /**
- * PinInput เป็น controlled local component ที่:
- * - auto-submit เมื่อกรอกครบ min หลัก
- * - ป้องกัน double-submit และแสดง loading ระหว่างรอผล
- * - รับ callback onSubmit ที่อาจ return Promise<void|boolean> เพื่อให้หน้ารอผลได้
+ * PinInput:
+ * - แสดงวงกลมตำแหน่ง PIN จำนวน max (แต่แสดงอย่างน้อย min ช่อง)
+ * - เมื่อกรอกแต่ละตำแหน่ง จะเติมวงกลมด้านใน (ไม่เปลี่ยนขนาดขอบ)
+ * - auto-submit เมื่อถึง min หลัก (เรียก onSubmit)
+ * - ป้องกัน double-submit และแสดงสถานะ loading เล็กน้อย
  */
 export default function PinInput({
   onSubmit,
@@ -22,11 +23,9 @@ export default function PinInput({
   const pendingRef = useRef(false);
 
   useEffect(() => {
-    // auto-submit when reach min length
     if (input.length >= min && !pendingRef.current) {
-      // small debounce to allow UI update (show bullets)
       const t = setTimeout(() => {
-        submit(input);
+        void submit(input);
       }, 80);
       return () => clearTimeout(t);
     }
@@ -39,15 +38,13 @@ export default function PinInput({
     setLoading(true);
     try {
       const res = await onSubmit(pin);
-      // if onSubmit returns false explicitly, we keep the input for retry
       if (res === false) {
-        // keep input (or clear? we keep for UX so user can backspace quickly)
+        // ถ้าฟังก์ชันเรียกคืน false แปลว่าล้มเหลว ให้เก็บ input ไว้เพื่อแก้ไข
       } else {
-        // Clear input on success/undefined
         setInput("");
       }
-    } catch (e) {
-      // swallow here; page-level will show error
+    } catch {
+      // page-level จะแสดง error ถ้าต้องการ
     } finally {
       pendingRef.current = false;
       setLoading(false);
@@ -55,28 +52,29 @@ export default function PinInput({
   }
 
   function handleNum(n: number) {
-    setInput(prev => (prev.length >= max ? prev : prev + String(n)));
+    setInput((prev) => (prev.length >= max ? prev : prev + String(n)));
   }
   function handleBack() {
-    // don't allow back while submitting
     if (pendingRef.current) return;
-    setInput(prev => prev.slice(0, -1));
+    setInput((prev) => prev.slice(0, -1));
   }
   function handleOk() {
-    if (input.length >= min && input.length <= max) submit(input);
+    if (input.length >= min && input.length <= max) void submit(input);
   }
 
+  const dotsCount = Math.max(min, max); // แสดงช่องเต็มตาม max แต่อย่างน้อย min ช่อง
   return (
-    <div>
-      <div className="flex gap-2 justify-center mb-4">
-        {Array.from({ length: Math.max(input.length, min) }, (_, i) => (
-          <span key={i} className="text-3xl">
-            {input[i] ? "•" : "○"}
-          </span>
-        ))}
+    <div className="pin-input-root">
+      <div className="pin-dots" aria-hidden>
+        {Array.from({ length: dotsCount }, (_, i) => {
+          const filled = Boolean(input[i]);
+          return (
+            <div key={i} className={`pin-dot ${filled ? "filled" : ""}`} />
+          );
+        })}
       </div>
 
-      {loading && <div className="text-center mb-2">กำลังประมวลผล...</div>}
+      {loading && <div className="pin-loading">กำลังประมวลผล...</div>}
 
       <Numpad
         onNum={handleNum}
