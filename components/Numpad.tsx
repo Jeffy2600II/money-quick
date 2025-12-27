@@ -26,12 +26,23 @@ export default function Numpad({
     leftCell, 0, 'back'
   ];
   
-  // Tabler "backspace" SVG (source: https://tablericons.com/icon/backspace)
+  // Use the exact SVG you provided (converted to JSX attribute names)
   const BackSvg = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-      <path d="M20 7h-11l-3.5 5l3.5 5h11a1 1 0 0 0 1 -1v-8a1 1 0 0 0 -1 -1z" />
-      <path d="M12 9l4 4m0 -4l-4 4" />
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={32}
+      height={32}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#000000"
+      strokeWidth={1}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className="numpad-back-svg"
+    >
+      <path d="M20 6a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-11l-5 -5a1.5 1.5 0 0 1 0 -2l5 -5z" />
+      <path d="M12 10l4 4m0 -4l-4 4" />
     </svg>
   );
   
@@ -62,7 +73,9 @@ export default function Numpad({
             }}
             disabled={disabled}
           >
-            {isBack ? <span className="numpad-key-icon"><BackSvg/></span> : <span className="numpad-key-label">{isNum ? String(c) : '✔'}</span>}
+            {isBack
+              ? <span className="numpad-key-icon"><BackSvg/></span>
+              : <span className="numpad-key-label">{isNum ? String(c) : '✔'}</span>}
           </button>
         );
       })}
