@@ -1,20 +1,12 @@
 import React, { Suspense } from "react";
 import SetupPinClient from "./SetupPinClient";
 
-// Server component: ห่อ client component ด้วย Suspense เพื่อหลีกเลี่ยง
-// ข้อผิดพลาด "useSearchParams() should be wrapped in a suspense boundary"
+// Server component: render client component directly but DO NOT show any page-level
+// fallback UI. We keep a Suspense boundary (required when client uses useSearchParams),
+// but set fallback to null so no separate "page loader" appears — central loader will be used.
 export default function SetupPinPage() {
   return (
-    <Suspense fallback={
-      <main className="pin-page">
-        <div className="pin-top" />
-        <div className="pin-brand">
-          <div className="logo"><span className="logo-mark">💰</span><span className="logo-text">Money quick</span></div>
-          <div className="pin-prompt">กำลังโหลด...</div>
-        </div>
-        <div className="pin-loading">กำลังโหลดหน้า...</div>
-      </main>
-    }>
+    <Suspense fallback={null}>
       <SetupPinClient />
     </Suspense>
   );
