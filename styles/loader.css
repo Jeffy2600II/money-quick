@@ -1,4 +1,6 @@
-/* Loader overlay styles (แยกไฟล์เพื่อความยืดหยุ่น) */
+/* Loader overlay styles (ปรับปรุง: ขนาดตัวอักษรและโลโก้ใหญ่ขึ้น,
+   overlay เป็นสีขาวทึบเต็มจอ เพื่อเน้นความชัดและความเรียบง่าย)
+*/
 
 .mq-loader-root {
   position: fixed;
@@ -6,7 +8,7 @@
   display: none;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: 99999; /* ยกขึ้นให้สูงเพื่อให้แน่ใจว่าอยู่เหนือทุกคอนเทนต์ */
   pointer-events: none;
 }
 
@@ -15,61 +17,95 @@
   pointer-events: auto;
 }
 
-/* backdrop ให้จาง */
+/* เปลี่ยน backdrop เป็นสีขาวทึบเต็มจอ (ไม่โปร่งใส) */
 .mq-loader-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(255,255,255,0.75); /* โปร่งแสงเพื่อให้เห็นพื้นหลังเล็กน้อย */
-  backdrop-filter: blur(0px);
+  background: #ffffff; /* ขาวทึบ */
+  /* ลบ blur เล็กน้อยเพื่อให้ภาพคมชัด แต่สามารถเปิดได้อีกครั้งหากต้องการ */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-/* card กึ่งกลาง */
+/* card กึ่งกลาง — ปรับให้ใหญ่และเรียบง่ายขึ้น */
 .mq-loader-card {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 18px 26px;
-  border-radius: 12px;
-  background: #ffffff; /* ตามดีไซน์หน้าพิน */
-  min-width: 220px;
-  max-width: 90%;
+  gap: 16px;
+  padding: 22px 32px;
+  border-radius: 14px;
+  background: #ffffff; /* เก็บเป็นขาวเช่นกัน (เนียนกับ backdrop) */
+  min-width: 280px;
+  max-width: 92%;
   box-sizing: border-box;
-  z-index: 1;
-  /* ไม่มี shadow ตามที่ต้องการ */
+  z-index: 2; /* ให้อยู่เหนือ backdrop */
+  /* ไม่มี shadow ตามดีไซน์ แต่วางขอบเล็กน้อยเพื่อให้การ์ดแยกจากพื้นหลัง */
+  border: 1px solid rgba(15,23,42,0.06);
 }
 
-/* โลโก้ (reuse รูปแบบโลโก้หน้าอื่น) */
+/* โลโก้ : ขยายขนาดเพื่อให้เห็นชัดเจนบน overlay */
+.mq-loader-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+/* ชื่อแถว 1 — ใหญ่และชัด */
 .mq-loader-logo .logo-line1 {
   font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 28px; /* เพิ่มจาก 20 */
+  font-weight: 800;
   color: #111827;
   line-height: 1;
   margin: 0;
+  letter-spacing: 0.2px;
 }
+
+/* ชื่อแถว 2 — เน้นด้วยสี accent และขนาดใหญ่ขึ้นเล็กน้อย */
 .mq-loader-logo .logo-line2 {
   font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 24px; /* เพิ่มจาก 18 */
+  font-weight: 800;
   color: #00c48a;
-  margin-top: -4px;
+  margin-top: -6px;
+  letter-spacing: 0.2px;
 }
 
-/* ข้อความสถานะ (muted color ตาม prompt) */
+/* ข้อความสถานะ: ขนาดใหญ่ขึ้นเพื่อความชัดเจนบน overlay */
 .mq-loader-message {
   color: #6b7280;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 18px; /* เพิ่มจาก 15 */
+  font-weight: 700; /* หนากว่าเดิมเล็กน้อยเพื่อเน้น */
   text-align: center;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* ปรับบนมือถือ */
+/* เพิ่ม spinner ขนาดใหญ่สำหรับสัญญาณสถานะ */
+.loading-spinner {
+  width: 58px;  /* เพิ่มขนาด */
+  height: 58px;
+  border-radius: 9999px;
+  border: 5px solid rgba(0,0,0,0.06);
+  border-top-color: var(--accent);
+  animation: spin 900ms linear infinite;
+}
+
+/* ใช้ keyframe เดิมสำหรับการหมุน */
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ปรับแต่งการแสดงบนมือถือให้สัดส่วนเหมาะสม */
 @media (max-width: 480px) {
-  .mq-loader-card { padding: 14px 18px; min-width: 200px; }
-  .mq-loader-logo .logo-line1 { font-size: 18px; }
-  .mq-loader-logo .logo-line2 { font-size: 16px; }
-  .mq-loader-message { font-size: 14px; }
+  .mq-loader-card {
+    padding: 18px 22px;
+    min-width: 240px;
+  }
+  .mq-loader-logo .logo-line1 { font-size: 22px; }
+  .mq-loader-logo .logo-line2 { font-size: 18px; margin-top: -4px; }
+  .mq-loader-message { font-size: 16px; }
+  .loading-spinner { width: 48px; height: 48px; border-width: 4px; }
 }
