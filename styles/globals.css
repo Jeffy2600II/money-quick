@@ -1,8 +1,10 @@
-/* --- Updated PIN + Numpad styles --- */
+/* Full updated CSS for PIN screens & numpad (replace or merge into your existing globals.css) */
 
-/* Fonts + root colors (tuned) */
+/* Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+
 :root {
-  --mq-green: #00c48a;        /* vivid light green */
+  --mq-green: #00c48a;        /* vivid light green (fresh) */
   --mq-green-dark: #04996f;
   --mq-border: rgba(15,23,42,0.06); /* very light gray border */
   --page-bg: #ffffff;
@@ -10,7 +12,7 @@
   --text: #0f172a;
 }
 
-/* Base reset */
+/* Base */
 html, body {
   height: 100%;
   margin: 0;
@@ -24,7 +26,7 @@ html, body {
   box-sizing: border-box;
 }
 
-/* PIN page container (centered vertically content starts near top like K+) */
+/* Centered PIN page (K+-like layout) */
 .pin-page {
   min-height: 100vh;
   display: flex;
@@ -33,13 +35,13 @@ html, body {
   padding-top: 34px;
 }
 
-/* Brand / logo spacing - improved spacing for "application" look */
+/* Brand / logo spacing - improved */
 .pin-brand {
   display:flex;
   flex-direction:column;
   align-items:center;
   gap:8px;
-  margin-bottom: 14px; /* more breathing room above dots */
+  margin-bottom: 14px;
 }
 .logo {
   display:flex;
@@ -69,7 +71,7 @@ html, body {
   margin-bottom: 12px;
 }
 
-/* PIN dots: thinner border and filled fully (no inner gap) */
+/* PIN dots: thin border and filled fully when entered */
 .pin-dots {
   display:flex;
   gap: 16px;
@@ -80,7 +82,7 @@ html, body {
   width: 18px;
   height: 18px;
   border-radius: 9999px;
-  border: 0.9px solid var(--mq-border); /* thin */
+  border: 0.9px solid var(--mq-border); /* thin border */
   background: transparent;
   transition: background-color 140ms ease, border-color 140ms ease;
   box-sizing: border-box;
@@ -90,7 +92,7 @@ html, body {
   border-color: var(--mq-green);
 }
 
-/* Numpad grid: center exactly, use width:fit-content to center grid and avoid right-shift */
+/* Numpad grid: center exactly */
 .numpad-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -101,8 +103,6 @@ html, body {
   padding: 0 16px 28px;
   box-sizing: border-box;
 }
-
-/* cell for empty slots to keep grid shape */
 .numpad-cell {
   width: 96px;
   height: 96px;
@@ -168,7 +168,7 @@ html, body {
 
 /* label style (digits) — slightly smaller and bold-black */
 .numpad-key-label {
-  font-size: 1.6rem; /* reduced a bit */
+  font-size: 1.6rem; /* reduced */
   color: #000000;    /* black as requested */
   font-weight: 600;
   line-height: 1;
@@ -179,6 +179,7 @@ html, body {
   display:block;
   color: #000000; /* black icon */
   stroke: currentColor;
+  fill: currentColor;
 }
 
 /* disabled look */
@@ -194,7 +195,7 @@ html, body {
   padding-bottom: 2px;
 }
 
-/* responsive adjustments */
+/* responsive */
 @media (max-width: 480px) {
   .pin-dot { width: 14px; height: 14px; }
   .numpad-cell, .numpad-key, .numpad-key-back { width: 76px; height: 76px; }
@@ -203,6 +204,6 @@ html, body {
   .logo-line2 { font-size: 24px; margin-top: -4px; }
 }
 
-/* small helpers */
+/* helpers */
 .text-center { text-align: center; }
 .mt-2 { margin-top: .5rem; }
