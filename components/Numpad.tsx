@@ -76,23 +76,23 @@ export default function Numpad({
     const dx = e.clientX - active.startX;
     const dy = e.clientY - active.startY;
 
-    // If the user moves primarily vertically beyond the threshold, cancel the pending action.
-    // This helps avoid firing a key when user is performing pull-to-refresh (on mobile)
-    // or scrolling gesture. We don't call preventDefault so browser can handle native refresh.
-    const VERTICAL_CANCEL_THRESHOLD = 12; // pixels
-    if (!active.cancelled && Math.abs(dy) > VERTICAL_CANCEL_THRESHOLD && Math.abs(dy) > Math.abs(dx)) {
+    // Increased thresholds to make cancellation less sensitive:
+    // - Vertical movement must exceed VERTICAL_CANCEL_THRESHOLD (px) AND be clearly more vertical than horizontal.
+    // - Horizontal movement must exceed HORIZONTAL_CANCEL_THRESHOLD (px).
+    const VERTICAL_CANCEL_THRESHOLD = 28; // increased from 12 -> harder to cancel by slight vertical drag
+    const HORIZONTAL_CANCEL_THRESHOLD = 96; // increased from 48 -> harder to cancel by slight horizontal move
+
+    if (!active.cancelled && Math.abs(dy) > VERTICAL_CANCEL_THRESHOLD && Math.abs(dy) > Math.abs(dx) * 1.2) {
+      // Consider it a deliberate vertical gesture (pull-to-refresh / scroll) only if vertical dominates
       active.cancelled = true;
       setPressedIndex(null);
       try {
         (active.target as Element)?.releasePointerCapture?.(active.pointerId);
       } catch {}
-      // keep activePointerRef to allow pointerup cleanup; mark cancelled
       activePointerRef.current = active;
       return;
     }
 
-    // If pointer moved far outside button bounds horizontally, cancel as well.
-    const HORIZONTAL_CANCEL_THRESHOLD = 48;
     if (!active.cancelled && Math.abs(dx) > HORIZONTAL_CANCEL_THRESHOLD) {
       active.cancelled = true;
       setPressedIndex(null);
