@@ -15,7 +15,7 @@ export async function checkPin(pin: string) {
       body: JSON.stringify({ pin }),
       timeout: 4500, // short timeout for auth check
       retries: 1, // retry once on network error
-      cache: false // DO NOT cache auth checks
+      cacheEnabled: false // DO NOT cache auth checks
     });
     // res expected to be parsed JSON by fetchWithTimeout
     return { ok: true, data: res };
@@ -32,7 +32,7 @@ export async function setPin(pin: string, force = false) {
       body: JSON.stringify({ pin, force }),
       timeout: 7000,
       retries: 1,
-      cache: false
+      cacheEnabled: false
     });
     return { ok: true, data: res };
   } catch (e: any) {
@@ -48,7 +48,7 @@ export async function changePin(oldPin: string, newPin: string) {
       body: JSON.stringify({ oldPin, newPin }),
       timeout: 7000,
       retries: 1,
-      cache: false
+      cacheEnabled: false
     });
     return { ok: true, data: res };
   } catch (e: any) {

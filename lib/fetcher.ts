@@ -1,15 +1,15 @@
 /* fetcher.ts
    - fetchWithTimeout: timeout + retry + exponential backoff
    - simple in-memory cache for GET with TTL and stale-while-revalidate
-   - options: { cache: boolean, ttl: number, swr: boolean, retries: number, timeout: number }
+   - options: { cacheEnabled: boolean, ttl: number, swr: boolean, retries: number, timeout: number }
 */
 
-type FetchOptions = RequestInit & {
-  cache?: boolean;    // whether to cache GET responses (default false)
-  ttl?: number;       // cache ttl in ms (default 30s)
-  swr?: boolean;      // return cached immediately and revalidate in background
-  retries?: number;   // retry attempts on network failure (default 1)
-  timeout?: number;   // per-request timeout ms (default 5000)
+type FetchOptions = Omit<RequestInit, 'cache'> & {
+  cacheEnabled?: boolean;    // whether to cache GET responses (default false)
+  ttl?: number;              // cache ttl in ms (default 30s)
+  swr?: boolean;             // return cached immediately and revalidate in background
+  retries?: number;          // retry attempts on network failure (default 1)
+  timeout?: number;          // per-request timeout ms (default 5000)
 };
 
 type CacheEntry = {
@@ -20,7 +20,7 @@ type CacheEntry = {
 
 const inMemoryCache = new Map<string, CacheEntry>();
 
-function cacheKey(url: string, init?: RequestInit) {
+function cacheKey(url: string /*, init?: RequestInit */) {
   // only use URL as key for GET caching.
   return url;
 }
@@ -31,7 +31,7 @@ function sleep(ms: number) {
 
 export async function fetchWithTimeout(input: RequestInfo, init?: FetchOptions) {
   const options: FetchOptions = {
-    cache: false,
+    cacheEnabled: false,
     ttl: 30_000,
     swr: false,
     retries: 1,
@@ -39,13 +39,13 @@ export async function fetchWithTimeout(input: RequestInfo, init?: FetchOptions) 
     ...init,
   };
 
-  const method = (options.method || 'GET').toUpperCase();
+  const method = ((options.method as string) || 'GET').toUpperCase();
   const isGet = method === 'GET';
 
-  const key = isGet ? cacheKey(String(input), options) : null;
+  const key = isGet ? cacheKey(String(input)) : null;
 
   // If caching and swr and cached entry exists -> return cached immediately then revalidate
-  if (isGet && options.cache && options.swr && key) {
+  if (isGet && options.cacheEnabled && options.swr && key) {
     const entry = inMemoryCache.get(key);
     if (entry && (Date.now() - entry.ts) < (entry.ttl + 5_000)) {
       // return cached data, and revalidate in background
@@ -55,7 +55,7 @@ export async function fetchWithTimeout(input: RequestInfo, init?: FetchOptions) 
   }
 
   // If caching and not expired, return cached
-  if (isGet && options.cache && key) {
+  if (isGet && options.cacheEnabled && key) {
     const entry = inMemoryCache.get(key);
     if (entry && (Date.now() - entry.ts) < entry.ttl) {
       return entry.data;
@@ -66,7 +66,7 @@ export async function fetchWithTimeout(input: RequestInfo, init?: FetchOptions) 
   const final = await networkFetchWithRetries(input, options);
 
   // If GET and caching enabled and response is cacheable, store it
-  if (isGet && options.cache && key) {
+  if (isGet && options.cacheEnabled && key) {
     try {
       // We assume final is already parsed (JSON or text)
       inMemoryCache.set(key, { data: final, ts: Date.now(), ttl: options.ttl! });
@@ -90,7 +90,7 @@ async function revalidate(input: RequestInfo, options: FetchOptions, key: string
 async function networkFetchWithRetries(input: RequestInfo, options: FetchOptions) {
   let attempt = 0;
   let lastError: any = null;
-  const max = Math.max(0, options.retries ?? 1);
+  const max = Math.max(0, (options.retries ?? 1));
 
   while (attempt <= max) {
     try {
