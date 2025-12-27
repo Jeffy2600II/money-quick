@@ -45,8 +45,9 @@ export default function ChangePinPage() {
     try {
       const res = await pinClient.changePin(oldPin, newPin);
       if (res.ok && res.data?.ok) {
-        localStorage.setItem('pin', newPin);
-        setStep('done');
+        try { localStorage.setItem('pin', newPin); } catch {}
+        // เมื่อเปลี่ยนสำเร็จ ให้เข้าใช้งานทันที
+        window.location.href = '/';
       } else {
         setError(res.error || 'PIN เดิมผิด หรือเกิดข้อผิดพลาด');
         setStep('old');
@@ -63,29 +64,29 @@ export default function ChangePinPage() {
     <main className="pin-page">
       <div className="pin-top" />
       <div className="pin-brand">
-        <div className="logo"><span>K</span><span className="plus">+</span></div>
+        <div className="logo"><span className="logo-mark">💰</span><span className="logo-text">Money quick</span></div>
         <div className="pin-prompt">เปลี่ยนรหัส PIN</div>
       </div>
 
       {step === 'old' && (
         <>
           <div className="text-gray-500 mb-2">กรุณาใส่ PIN เก่า</div>
-          <PinInput onSubmit={handleOldPin} min={4} max={6} />
+          <PinInput onSubmit={handleOldPin} requiredLength={6} />
         </>
       )}
       {step === 'new' && (
         <>
           <div className="text-gray-500 mb-2">ตั้ง PIN ใหม่</div>
-          <PinInput onSubmit={handleNewPin} min={4} max={6} />
+          <PinInput onSubmit={handleNewPin} requiredLength={6} />
         </>
       )}
       {step === 'confirm' && (
         <>
           <div className="text-gray-500 mb-2">ยืนยัน PIN ใหม่อีกครั้ง</div>
-          <PinInput onSubmit={handleConfirmPin} min={4} max={6} />
+          <PinInput onSubmit={handleConfirmPin} requiredLength={6} />
         </>
       )}
-      {step === 'done' && <div className="text-green-600 mt-4">เปลี่ยน PIN สำเร็จ!</div>}
+      {step === 'done' && <div className="text-green-600 mt-4">เปลี่ยน PIN สำเร็จ! กำลังไปหน้าหลัก...</div>}
 
       {loading && <div className="pin-loading">กำลังประมวลผล...</div>}
       {error && <div className="mt-3 text-red-500">{error}</div>}

@@ -13,7 +13,7 @@ export default function LockPage() {
     try {
       const res = await pinClient.checkPin(pin);
       if (res.ok && res.data?.ok) {
-        localStorage.setItem("pin", pin);
+        try { localStorage.setItem("pin", pin); } catch {}
         window.location.href = "/";
       } else {
         setError("PIN ไม่ถูกต้อง");
@@ -26,7 +26,7 @@ export default function LockPage() {
   }
   
   function handleForgot() {
-    // สามารถเปลี่ยนพฤติกรรมตามต้องการ (ไปหน้าลืมรหัสหรือแสดง modal)
+    // ไปหน้า setup (หรือจะเปลี่ยน flow เป็น recovery)
     window.location.href = "/setup-pin";
   }
   
@@ -37,11 +37,11 @@ export default function LockPage() {
       </div>
 
       <div className="pin-brand">
-        <div className="logo"><span>K</span><span className="plus">+</span></div>
+        <div className="logo"><span className="logo-mark">💰</span><span className="logo-text">Money quick</span></div>
         <div className="pin-prompt">กรุณาใส่รหัสผ่าน</div>
       </div>
 
-      <PinInput onSubmit={handleSubmit} min={4} max={6} showForgot onForgot={handleForgot} />
+      <PinInput onSubmit={handleSubmit} requiredLength={6} showForgot onForgot={handleForgot} />
 
       {loading && <div className="pin-loading">กำลังตรวจสอบ...</div>}
       {error && <div className="mt-3 text-red-500">{error}</div>}

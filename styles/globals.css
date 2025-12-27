@@ -1,13 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
 
-:root{
+:root {
   --kplus-green: #059669;
   --kplus-green-strong: #046a4a;
-  --kplus-border: rgba(34,197,94,0.25);
-  --bg: #ffffff;
+  --kplus-border: rgba(34,197,94,0.22);
   --page-bg: #f6fafb;
+  --card-bg: #ffffff;
+  --muted: #6b7280;
+  --text: #0f172a;
 }
 
+/* Reset / base */
 html, body {
   min-height: 100vh;
   height: 100%;
@@ -15,18 +18,13 @@ html, body {
   margin: 0;
   font-family: 'Sarabun', 'Segoe UI', 'Arial', sans-serif;
   background: var(--page-bg);
-  color: #222;
-}
-
-body {
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  min-height: 100vh;
-  min-width: 100vw;
   font-size: 17px;
 }
 
-/* Centered page container similar to K+ */
+/* Page container for PIN screens */
 .pin-page {
   display: flex;
   flex-direction: column;
@@ -37,7 +35,7 @@ body {
   box-sizing: border-box;
 }
 
-/* Top area: close button aligned right absolute */
+/* Top row: left empty, close on right */
 .pin-top {
   width: 100%;
   max-width: 420px;
@@ -55,7 +53,7 @@ body {
   cursor: pointer;
 }
 
-/* Logo / title */
+/* Brand area */
 .pin-brand {
   display: flex;
   flex-direction: column;
@@ -64,35 +62,46 @@ body {
   margin-bottom: 8px;
 }
 .logo {
-  font-weight: 700;
-  font-size: 44px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #111827;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:700;
+  font-size:28px;
 }
-.logo .plus {
-  color: var(--kplus-green);
-  font-size: 42px;
-  line-height: 1;
-  margin-top: -2px;
+.logo-mark {
+  font-size:34px;
+  transform: translateY(-2px);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:42px;
+  height:42px;
+  border-radius:10px;
+  background: linear-gradient(135deg, rgba(5,150,105,0.12), rgba(5,150,105,0.06));
+  color: var(--kplus-green-strong);
+  box-shadow: 0 6px 14px rgba(5,150,105,0.06);
+}
+.logo-text {
+  color:var(--text);
+  font-size:22px;
+  font-weight:700;
 }
 
-/* prompt text */
+/* Prompt */
 .pin-prompt {
   margin-top: 6px;
   font-size: 20px;
   font-weight: 600;
-  color: #111827;
-  margin-bottom: 10px;
+  color: var(--text);
+  margin-bottom: 12px;
 }
 
-/* Dots */
+/* Dots (PIN positions) */
 .pin-dots {
   display: flex;
   gap: 18px;
   justify-content: center;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
   padding-top: 6px;
 }
 .pin-dot {
@@ -103,12 +112,12 @@ body {
   background: transparent;
   position: relative;
   box-sizing: border-box;
-  transition: border-color 120ms ease;
+  transition: border-color 120ms ease, transform 180ms ease;
 }
 .pin-dot.filled {
   border-color: rgba(5,150,105,0.95);
 }
-.pin-dot.filled::after{
+.pin-dot.filled::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -156,16 +165,20 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: border-color 120ms ease, background-color 120ms ease, transform 80ms ease;
+  transition: border-color 120ms ease, background-color 120ms ease, transform 80ms ease, box-shadow 120ms ease;
   -webkit-tap-highlight-color: transparent;
   outline: none;
   box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
+  /* keep consistent size even when inner fill or focus */
 }
 
 .numpad-key:active {
   border-color: rgba(5,150,105,0.9);
   transform: scale(0.97);
   background: rgba(5,150,105,0.03);
+  box-shadow: 0 6px 14px rgba(5,150,105,0.06);
 }
 
 .numpad-key[disabled] {
@@ -179,27 +192,6 @@ body {
   user-select: none;
 }
 
-/* customize left slot (fingerprint) */
-.numpad-custom {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px;
-}
-
-/* fingerprint small button style (inside PinInput leftSlot) */
-.fingerprint-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 9999px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-}
-
 /* small text link (forget) */
 .forgot-link {
   margin-top: 12px;
@@ -210,14 +202,35 @@ body {
   padding-bottom: 2px;
 }
 
+/* subtle card around keypad area (optional) */
+.pin-card {
+  background: var(--card-bg);
+  border-radius: 14px;
+  padding: 12px;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: 0 10px 30px rgba(16,24,40,0.04);
+  margin-top: 8px;
+  box-sizing: border-box;
+}
+
 /* Responsive tweaks */
 @media (max-width: 480px) {
   .pin-dot { width: 16px; height: 16px; }
   .pin-dot.filled::after { width: 10px; height: 10px; }
   .numpad-cell, .numpad-key { width: 68px; height: 68px; }
   .numpad-grid { gap: 14px; padding: 8px; }
-  .logo { font-size: 40px; }
+  .logo { font-size: 24px; }
+  .logo-mark { width: 36px; height: 36px; font-size: 26px; }
 }
 
-/* small helpers kept */
+/* Utilities kept for compatibility */
 .text-center { text-align: center; }
+.mt-2 { margin-top: .5rem; }
+.mt-3 { margin-top: .75rem; }
+.mt-4 { margin-top: 1rem; }
+.mb-2 { margin-bottom: .5rem; }
+.mb-4 { margin-bottom: 1rem; }
+.font-bold { font-weight: 700; }
+.text-green-600 { color: var(--kplus-green); }
+.text-red-500 { color: #ef4444; }

@@ -9,6 +9,7 @@ export default function SetupPinPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
+  // กำหนด requiredLength=6 เพื่อบังคับรหัส 6 หลัก
   async function handleFirst(pinValue: string) {
     setPin(pinValue);
     setStep('confirm');
@@ -27,8 +28,11 @@ export default function SetupPinPage() {
     try {
       const res = await pinClient.setPin(pinValue);
       if (res.ok && res.data?.ok) {
+        // บันทึก PIN ใน localStorage เพื่อให้ล็อกอินอัตโนมัติ
+        try { localStorage.setItem('pin', pinValue); } catch {}
         setStep('done');
-        window.location.href = '/lock';
+        // ไปหน้าแรกทันที
+        window.location.href = '/';
       } else {
         setError(res.error || 'ไม่สามารถบันทึก PIN ได้');
       }
@@ -43,23 +47,23 @@ export default function SetupPinPage() {
     <main className="pin-page">
       <div className="pin-top" />
       <div className="pin-brand">
-        <div className="logo"><span>K</span><span className="plus">+</span></div>
-        <div className="pin-prompt">ตั้ง PIN 4-6 หลัก</div>
+        <div className="logo"><span className="logo-mark">💰</span><span className="logo-text">Money quick</span></div>
+        <div className="pin-prompt">ตั้ง PIN 6 หลัก</div>
       </div>
 
       {step === 'first' && (
         <>
-          <PinInput onSubmit={handleFirst} min={4} max={6} />
+          <PinInput onSubmit={handleFirst} requiredLength={6} />
           <div className="text-gray-500 mt-2">ตั้ง PIN ใหม่</div>
         </>
       )}
       {step === 'confirm' && (
         <>
-          <PinInput onSubmit={handleConfirm} min={4} max={6} />
+          <PinInput onSubmit={handleConfirm} requiredLength={6} />
           <div className="text-gray-500 mt-2">ยืนยัน PIN อีกครั้ง</div>
         </>
       )}
-      {step === 'done' && <div className="text-green-600 mt-4">PIN ถูกบันทึกแล้ว!</div>}
+      {step === 'done' && <div className="text-green-600 mt-4">PIN ถูกบันทึกแล้ว! กำลังไปหน้าหลัก...</div>}
 
       {loading && <div className="pin-loading">กำลังบันทึก...</div>}
       {error && <div className="mt-3 text-red-500">{error}</div>}

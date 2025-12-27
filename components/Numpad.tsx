@@ -12,11 +12,6 @@ type Props = {
    */
   showOk ? : boolean;
   disabled ? : boolean;
-  /**
-   * ช่องซ้ายล่าง (เช่น fingerprint) และขวาล่าง (เช่น backspace) สามารถส่งเป็น React node ได้
-   */
-  leftSlot ? : React.ReactNode | null;
-  rightSlot ? : React.ReactNode | null;
 };
 
 export default function Numpad({
@@ -26,14 +21,12 @@ export default function Numpad({
   onOk,
   showOk = true,
   disabled = false,
-  leftSlot = null,
-  rightSlot = null,
 }: Props) {
-  // ตำแหน่งแถวล่าง: ถ้ามี leftSlot ใช้มันก่อน, ถ้าไม่มีแต่ showOk=true ให้ใส่ 'ok', มิฉะนั้นช่องว่าง
-  const leftCell = leftSlot ?? (showOk ? 'ok' : null);
-  const rightCell = rightSlot ?? 'back';
+  // ตำแหน่งแถวล่าง: ถ้า showOk=true ให้ใส่ 'ok' ทางซ้ายสุด แถวล่างเป็น [left, 0, right]
+  const leftCell = showOk ? 'ok' : null;
+  const rightCell = 'back';
   
-  const cells: Array < number | 'back' | 'ok' | React.ReactNode | null > = [
+  const cells: Array < number | 'back' | 'ok' | null > = [
     1, 2, 3,
     4, 5, 6,
     7, 8, 9,
@@ -47,29 +40,11 @@ export default function Numpad({
           return <div key={idx} className="numpad-cell" />;
         }
 
-        // custom node (เช่น fingerprint icon) ให้ห่อด้วยปุ่มสไตล์เดียวกัน
-        if (typeof c !== 'number' && c !== 'back' && c !== 'ok') {
-          return (
-            <button
-              key={idx}
-              type="button"
-              className="numpad-key numpad-custom"
-              onClick={() => {
-                if (disabled) return;
-                // custom slot click: หน้าเรียกใช้งานสามารถให้ leftSlot เป็นปุ่ม/element ที่จัดการเอง
-              }}
-              disabled={disabled}
-            >
-              <span className="numpad-key-label">{c}</span>
-            </button>
-          );
-        }
-
         const isNum = typeof c === 'number';
         const isBack = c === 'back';
         const isOk = c === 'ok';
 
-        // ถ้าเป็น OK แต่ onOk ไม่มี ให้แสดงเป็นช่องว่าง (ไม่ควรเกิดกับ showOk default true ถ้าไม่มี onOk หน้าเรียก)
+        // ถ้าเป็น OK แต่ไม่มี onOk -> แสดงเป็นช่องว่างเพื่อหลีกเลี่ยงการส่ง undefined
         if (isOk && !onOk) {
           return <div key={idx} className="numpad-cell" />;
         }
