@@ -345,3 +345,26 @@ html, body {
 .mt-2 { margin-top: 0.5rem; }
 .mt-3 { margin-top: 0.75rem; }
 .mt-4 { margin-top: 1rem; }
+
+/* เพิ่มตอนท้าย หรือวางที่เหมาะสมในไฟล์ globals.css */
+
+/* pressed state for better touch feedback */
+.numpad-key.pressed {
+  transform: translateY(1px) scale(0.99);
+  border-color: var(--accent);
+  transition: transform 90ms ease, border-color 90ms ease;
+}
+
+/* ensure disabled whole input (via pin-input-disabled) already dims;
+   but also ensure individual keys show disabled cursor */
+.numpad-key[disabled],
+.numpad-key-back[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Slightly reduce pointer-event area to avoid accidental drags */
+.numpad-key, .numpad-key-back {
+  touch-action: manipulation;
+}
