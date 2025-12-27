@@ -2,12 +2,6 @@
 import { useEffect, useRef, useState } from "react";
 import Numpad from "./Numpad";
 
-/**
- * PinInput: requiredLength default 6
- * - auto-submit เมื่อครบ requiredLength
- * - ไม่มีข้อความ "กำลังประมวลผล" ใด ๆ ในตัว component นี้
- * - ถ้า onSubmit คืนค่า false / throw -> input คงไว้และ page-level จะแสดง error
- */
 export default function PinInput({
   onSubmit,
   requiredLength = 6,
@@ -34,9 +28,9 @@ export default function PinInput({
     try {
       const res = await onSubmit(pin);
       if (res === false) {
-        // failed -> keep input for user to edit
+        // keep input for user to edit (page shows error)
       } else {
-        // success -> clear input silently
+        // success: clear silently (redirect handled by page)
         setInput("");
       }
     } catch {
@@ -65,7 +59,6 @@ export default function PinInput({
         })}
       </div>
 
-      {/* no loading text here — pages handle errors and redirect */}
       <Numpad
         onNum={handleNum}
         onBack={handleBack}

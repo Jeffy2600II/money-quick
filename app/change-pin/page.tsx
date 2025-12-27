@@ -46,7 +46,6 @@ export default function ChangePinPage() {
       const res = await pinClient.changePin(oldPin, newPin);
       if (res.ok && res.data?.ok) {
         try { localStorage.setItem('pin', newPin); } catch {}
-        // เมื่อเปลี่ยนสำเร็จ ให้เข้าใช้งานทันที
         window.location.href = '/';
       } else {
         setError(res.error || 'PIN เดิมผิด หรือเกิดข้อผิดพลาด');
@@ -63,32 +62,36 @@ export default function ChangePinPage() {
   return (
     <main className="pin-page">
       <div className="pin-top" />
+
       <div className="pin-brand">
-        <div className="logo"><span className="logo-mark">💰</span><span className="logo-text">Money quick</span></div>
+        <div className="logo">
+          <div className="logo-line1">Money</div>
+          <div className="logo-line2">quick</div>
+        </div>
         <div className="pin-prompt">เปลี่ยนรหัส PIN</div>
       </div>
 
       {step === 'old' && (
         <>
-          <div className="text-gray-500 mb-2">กรุณาใส่ PIN เก่า</div>
+          <div className="text-center" style={{ color: '#6b7280', marginBottom: 8 }}>กรุณาใส่ PIN เก่า</div>
           <PinInput onSubmit={handleOldPin} requiredLength={6} />
         </>
       )}
       {step === 'new' && (
         <>
-          <div className="text-gray-500 mb-2">ตั้ง PIN ใหม่</div>
+          <div className="text-center" style={{ color: '#6b7280', marginBottom: 8 }}>ตั้ง PIN ใหม่</div>
           <PinInput onSubmit={handleNewPin} requiredLength={6} />
         </>
       )}
       {step === 'confirm' && (
         <>
-          <div className="text-gray-500 mb-2">ยืนยัน PIN ใหม่อีกครั้ง</div>
+          <div className="text-center" style={{ color: '#6b7280', marginBottom: 8 }}>ยืนยัน PIN ใหม่อีกครั้ง</div>
           <PinInput onSubmit={handleConfirmPin} requiredLength={6} />
         </>
       )}
       {step === 'done' && <div className="text-green-600 mt-4">เปลี่ยน PIN สำเร็จ! กำลังไปหน้าหลัก...</div>}
 
-      {loading && <div className="pin-loading">กำลังประมวลผล...</div>}
+      {loading && <div className="pin-loading"></div>}
       {error && <div className="mt-3 text-red-500">{error}</div>}
     </main>
   );

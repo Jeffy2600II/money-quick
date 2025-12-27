@@ -1,23 +1,22 @@
-/* --- Full updated CSS for PIN screens & numpad --- */
+/* Full updated CSS — tuned to look like K+ layout but using our "Money quick" text logo */
+/* Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
 
-:root {
-  --mq-green: #059669;
-  --mq-green-strong: #046a4a;
-  --mq-border: rgba(5,150,105,0.14);
-  --page-bg: #f6fafb;
-  --card-bg: #fff;
+:root{
+  --mq-green: #05a46a; /* main green (tuned) */
+  --mq-green-dark: #047a53;
+  --mq-border: rgba(4,124,83,0.14);
+  --page-bg: #ffffff; /* keep clean white like K+ */
   --muted: #6b7280;
-  --text: #0f172a;
+  --text: #1f2937;
 }
 
-/* Base */
+/* Reset / base */
 html, body {
-  min-height: 100vh;
   height: 100%;
-  padding: 0;
   margin: 0;
-  font-family: 'Sarabun', 'Segoe UI', 'Arial', sans-serif;
+  padding: 0;
+  font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
   background: var(--page-bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
@@ -26,190 +25,145 @@ html, body {
   box-sizing: border-box;
 }
 
-/* PIN page layout */
+/* Centered PIN page similar to K+ */
 .pin-page {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 36px;
+  padding-top: 34px;
 }
 
-/* top / close */
-.pin-top {
-  width: 100%;
-  max-width: 420px;
-  position: relative;
-  height: 44px;
-}
-.pin-close {
-  position: absolute;
-  right: 8px;
-  top: 0;
-  background: transparent;
-  border: none;
-  font-size: 24px;
-  color: #9ca3af;
-  cursor: pointer;
-}
+/* We'll remove close button per request — pin-top kept for spacing only */
+.pin-top { width:100%; max-width:420px; height:44px; }
 
-/* brand */
+/* Logo: two-line text like K+ style, but our words and colors */
 .pin-brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 6px;
-  margin-bottom: 8px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  margin-bottom: 6px;
 }
 .logo {
   display:flex;
+  flex-direction:column;
   align-items:center;
-  gap:10px;
-  font-weight:700;
-  font-size:28px;
+  line-height:1;
 }
-.logo-mark {
+/* first word (Money) — dark */
+.logo-line1 {
   font-size:34px;
-  transform: translateY(-2px);
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  width:42px;
-  height:42px;
-  border-radius:10px;
-  background: linear-gradient(135deg, rgba(5,150,105,0.10), rgba(5,150,105,0.04));
-  color: var(--mq-green-strong);
-  box-shadow: 0 8px 18px rgba(5,150,105,0.05);
-}
-.logo-text {
-  color:var(--text);
-  font-size:22px;
   font-weight:700;
+  color: #111827;
+}
+/* second word (quick) — green */
+.logo-line2 {
+  font-size:30px;
+  font-weight:700;
+  color: var(--mq-green);
+  margin-top: -6px;
 }
 
 /* prompt */
 .pin-prompt {
-  margin-top: 6px;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text);
+  margin-top: 8px;
+  font-size: 18px;
+  font-weight:600;
+  color: var(--muted);
   margin-bottom: 12px;
 }
 
-/* pin dots - thinner border, when filled fill whole circle (no inner gap) */
+/* PIN dots: thinner border (~1px) and filled fully when entered */
 .pin-dots {
   display:flex;
   gap: 16px;
   justify-content: center;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 .pin-dot {
   width: 18px;
   height: 18px;
   border-radius: 9999px;
-  border: 1px solid var(--mq-border); /* thin border ~1px */
+  border: 1px solid var(--mq-border);
   background: transparent;
   box-sizing: border-box;
-  transition: background-color 150ms ease, border-color 150ms ease;
+  transition: background-color 140ms ease, border-color 140ms ease;
 }
-/* filled state: fill the whole circle (no inner gap) */
 .pin-dot.filled {
   background: var(--mq-green);
   border-color: var(--mq-green);
 }
 
-/* Numpad grid */
+/* Numpad */
 .numpad-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 22px;
   width: 100%;
   max-width: 420px;
   justify-items: center;
-  padding: 8px 20px 28px;
-  box-sizing: border-box;
+  padding: 8px 28px 32px;
 }
-.numpad-cell { width: 80px; height: 80px; }
+.numpad-cell { width: 92px; height: 92px; }
 
-/* circular key: thin border (~1px), transparent interior */
-/* no transform on :active, only subtle color change */
+/* circular key style: thin border 1px (or 1.2) */
 .numpad-key {
-  width: 80px;
-  height: 80px;
+  width: 92px;
+  height: 92px;
   border-radius: 9999px;
   background: transparent;
-  border: 1px solid var(--mq-border); /* thin */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+  border: 1px solid var(--mq-border);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition: border-color 140ms ease, background-color 140ms ease, box-shadow 120ms ease;
+  user-select: none;
   -webkit-tap-highlight-color: transparent;
   outline: none;
   box-sizing: border-box;
-  user-select: none;
 }
 
-/* active/hover: do not scale — only change border and add very subtle background */
+/* No scale transform on active; only color change */
 .numpad-key:active,
 .numpad-key:focus {
-  border-color: rgba(5,150,105,0.95);
-  background: rgba(5,150,105,0.04);
-  box-shadow: 0 6px 18px rgba(5,150,105,0.04);
+  border-color: var(--mq-green-dark);
+  background: rgba(4,124,83,0.04);
+  box-shadow: 0 10px 30px rgba(4,124,83,0.04);
 }
 
-/* disabled look */
-.numpad-key[disabled] {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* Disabled */
+.numpad-key[disabled] { opacity: 0.45; cursor: not-allowed; }
 
-/* label & svg sizing */
+/* labels */
 .numpad-key-label {
-  font-size: 1.7rem;
-  color: #065f46;
-  font-weight: 600;
-  line-height: 1;
+  font-size: 2rem;
+  color: #0f172a;
+  font-weight:600;
 }
-.numpad-key-icon svg { display:block; color: #065f46; }
+.numpad-key-icon svg { display:block; color: #0f172a; }
 
-/* forgot link style */
+/* forgot link */
 .forgot-link {
-  margin-top: 12px;
+  margin-top: 14px;
   color: var(--mq-green);
-  text-decoration: none;
-  font-weight: 600;
-  border-bottom: 2px solid rgba(5,150,105,0.12);
+  font-weight:600;
+  border-bottom: 2px solid rgba(4,124,83,0.12);
   padding-bottom: 2px;
 }
 
-/* optional card wrapper */
-.pin-card {
-  background: var(--card-bg);
-  border-radius: 12px;
-  padding: 12px;
-  width: 100%;
-  max-width: 460px;
-  box-shadow: 0 10px 30px rgba(16,24,40,0.04);
-  margin-top: 8px;
-  box-sizing: border-box;
-}
+/* spacing tweaks */
+.text-center { text-align:center; }
+.mt-2 { margin-top: .5rem; }
+.mt-3 { margin-top: .75rem; }
+.mt-4 { margin-top: 1rem; }
 
 /* responsive */
 @media (max-width: 480px) {
   .pin-dot { width: 14px; height: 14px; }
-  .numpad-cell, .numpad-key { width: 64px; height: 64px; }
-  .numpad-grid { gap: 12px; padding: 8px; }
-  .logo { font-size: 24px; }
-  .logo-mark { width: 36px; height: 36px; font-size: 24px; }
+  .numpad-cell, .numpad-key { width: 72px; height: 72px; }
+  .numpad-grid { gap: 14px; padding: 8px 18px 28px; }
+  .logo-line1 { font-size:28px; }
+  .logo-line2 { font-size:24px; margin-top:-4px; }
 }
-
-/* helpers */
-.text-center { text-align: center; }
-.mt-2 { margin-top: .5rem; }
-.mt-3 { margin-top: .75rem; }
-.mt-4 { margin-top: 1rem; }
-.mb-2 { margin-bottom: .5rem; }
-.mb-4 { margin-bottom: 1rem; }
-.font-bold { font-weight: 700; }
-.text-green-600 { color: var(--mq-green); }
-.text-red-500 { color: #ef4444; }

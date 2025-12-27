@@ -26,24 +26,23 @@ export default function LockPage() {
   }
   
   function handleForgot() {
-    // นำไปหน้า setup-pin ในโหมด force (เขียนทับรหัสเดิม)
     window.location.href = "/setup-pin?force=1";
   }
   
   return (
     <main className="pin-page">
-      <div className="pin-top">
-        <button className="pin-close" aria-label="close" onClick={() => window.history.back()}>✕</button>
-      </div>
+      <div className="pin-top" />
 
       <div className="pin-brand">
-        <div className="logo"><span className="logo-mark">💰</span><span className="logo-text">Money quick</span></div>
+        <div className="logo">
+          <div className="logo-line1">Money</div>
+          <div className="logo-line2">quick</div>
+        </div>
         <div className="pin-prompt">กรุณาใส่รหัสผ่าน</div>
       </div>
 
       <PinInput onSubmit={handleSubmit} requiredLength={6} />
 
-      {loading && <div className="pin-loading">กำลังตรวจสอบ...</div>}
       {error && <div className="mt-3 text-red-500">{error}</div>}
 
       <a className="forgot-link" onClick={handleForgot}>ลืมรหัสผ่าน</a>

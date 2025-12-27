@@ -18,22 +18,20 @@ export default function Numpad({
   showOk = true,
   disabled = false,
 }: Props) {
+  // bottom row: [left, 0, back] — left is ok if showOk true, else empty
   const leftCell = showOk ? 'ok' : null;
-  const rightCell = 'back';
-  
   const cells: Array < number | 'back' | 'ok' | null > = [
     1, 2, 3,
     4, 5, 6,
     7, 8, 9,
-    leftCell, 0, rightCell
+    leftCell, 0, 'back'
   ];
   
-  // backspace SVG
   const BackSvg = () => (
-    <svg width="28" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M20 7H8L4 12l4 5h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M15 9l-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M11 9l4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    <svg width="26" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M20 7H8L4 12l4 5h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M15 9l-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M11 9l4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
   
