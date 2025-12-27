@@ -49,6 +49,8 @@ export default function SetupPinClient() {
       const res = await pinClient.setPin(pinValue, forceMode);
       if (res.ok && res.data?.ok) {
         try { localStorage.setItem('pin', pinValue); } catch {}
+        // ensure we re-enable input (in case navigation is interrupted)
+        setSaving(false);
         loader.show('กำลังเข้าสู่ระบบ...');
         setTimeout(() => {
           loader.hide();

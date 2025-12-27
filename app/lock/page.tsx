@@ -20,6 +20,8 @@ export default function LockPage() {
       const res = await pinClient.checkPin(pin);
       if (res.ok && res.data?.ok) {
         try { localStorage.setItem("pin", pin); } catch {}
+        // Ensure input unlocked before transition (in case navigation is interrupted)
+        setVerifying(false);
         // small global loader for transition only (keeps UX consistent)
         loader.show('กำลังเข้าสู่ระบบ...');
         setTimeout(() => {
