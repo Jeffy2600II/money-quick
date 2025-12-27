@@ -2,42 +2,47 @@
 import React from "react";
 
 type Props = {
+  value ? : number | string;
   onNum: (n: number) => void;
   onBack: () => void;
   onOk ? : () => void;
   /**
-   * ซ่อนปุ่ม OK (ใช้สำหรับ PIN ที่ auto-submit)
+   * ถ้า false จะซ่อนปุ่ม OK (ใช้สำหรับ PIN ที่ auto-submit)
+   * ค่าเริ่มต้น: true เพื่อความเข้ากันได้ย้อนหลังกับโค้ดเดิม
    */
   showOk ? : boolean;
   disabled ? : boolean;
   /**
    * ช่องซ้ายล่าง (เช่น fingerprint) และขวาล่าง (เช่น backspace) สามารถส่งเป็น React node ได้
    */
-  leftSlot ? : React.ReactNode;
-  rightSlot ? : React.ReactNode;
+  leftSlot ? : React.ReactNode | null;
+  rightSlot ? : React.ReactNode | null;
 };
 
 export default function Numpad({
+  value,
   onNum,
   onBack,
   onOk,
-  showOk = false,
+  showOk = true,
   disabled = false,
-  leftSlot,
-  rightSlot,
+  leftSlot = null,
+  rightSlot = null,
 }: Props) {
-  // เรียงแบบ 3 คอลัมน์ โดยแถวล่างคือ [leftSlot, 0, rightSlot]
+  // ตำแหน่งแถวล่าง: ถ้ามี leftSlot ใช้มันก่อน, ถ้าไม่มีแต่ showOk=true ให้ใส่ 'ok', มิฉะนั้นช่องว่าง
+  const leftCell = leftSlot ?? (showOk ? 'ok' : null);
+  const rightCell = rightSlot ?? 'back';
+  
   const cells: Array < number | 'back' | 'ok' | React.ReactNode | null > = [
     1, 2, 3,
     4, 5, 6,
     7, 8, 9,
-    leftSlot ?? null, 0, rightSlot ?? 'back'
+    leftCell, 0, rightCell
   ];
   
   return (
     <div className="numpad-grid" role="group" aria-label="numpad">
       {cells.map((c, idx) => {
-        // ช่องว่างเพื่อคงกริด
         if (c === null) {
           return <div key={idx} className="numpad-cell" />;
         }
@@ -51,7 +56,7 @@ export default function Numpad({
               className="numpad-key numpad-custom"
               onClick={() => {
                 if (disabled) return;
-                // custom slot click ไม่ส่งค่าเลข — หน้าเรียกใช้งานจะส่งฟังก์ชันผ่าน leftSlotNode ถ้าต้องการ
+                // custom slot click: หน้าเรียกใช้งานสามารถให้ leftSlot เป็นปุ่ม/element ที่จัดการเอง
               }}
               disabled={disabled}
             >
@@ -64,8 +69,8 @@ export default function Numpad({
         const isBack = c === 'back';
         const isOk = c === 'ok';
 
-        // ถ้า showOk === false และ c === 'ok' ให้แสดงเป็นช่องว่าง (ไม่ควรเกิดเพราะเราไม่ได้ใส่ 'ok' ใน cells)
-        if (isOk && !showOk) {
+        // ถ้าเป็น OK แต่ onOk ไม่มี ให้แสดงเป็นช่องว่าง (ไม่ควรเกิดกับ showOk default true ถ้าไม่มี onOk หน้าเรียก)
+        if (isOk && !onOk) {
           return <div key={idx} className="numpad-cell" />;
         }
 
