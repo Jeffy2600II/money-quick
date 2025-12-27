@@ -1,16 +1,42 @@
 'use client';
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from "react";
 import Numpad from "./Numpad";
 
-export default function PinInput({
-  onSubmit,
-  requiredLength = 6,
-}: {
+/**
+ * PinInput (forwardRef)
+ * - onSubmit(pin) called when pin complete
+ * - expose method triggerError() to flash red on dots and optionally clear / keep input
+ */
+export type PinInputHandle = {
+  triggerError: (duration?: number) => void;
+};
+
+const PinInput = forwardRef<PinInputHandle, {
   onSubmit: (pin: string) => void | Promise<void | boolean>;
   requiredLength?: number;
-}) {
+}>(({ onSubmit, requiredLength = 6 }, ref) => {
   const [input, setInput] = useState("");
   const pendingRef = useRef(false);
+  const dotsRef = useRef<HTMLDivElement | null>(null);
+  const errorTimeoutRef = useRef<number | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    triggerError(duration = 900) {
+      // add class to pin-dots to show red border + small shake
+      const el = dotsRef.current;
+      if (!el) return;
+      el.classList.add('pin-error');
+      // optionally, we can clear input or keep as is; keep as is for UX
+      if (errorTimeoutRef.current) {
+        window.clearTimeout(errorTimeoutRef.current);
+      }
+      const id = window.setTimeout(() => {
+        el.classList.remove('pin-error');
+        errorTimeoutRef.current = null;
+      }, duration);
+      errorTimeoutRef.current = id;
+    }
+  }), []);
 
   useEffect(() => {
     if (input.length === requiredLength && !pendingRef.current) {
@@ -28,13 +54,13 @@ export default function PinInput({
     try {
       const res = await onSubmit(pin);
       if (res === false) {
-        // keep input for user to edit (page shows error)
+        // failed -> keep input (page should call triggerError via ref)
       } else {
-        // success: clear silently (redirect handled by page)
+        // success -> clear input silently
         setInput("");
       }
     } catch {
-      // page-level will show error; keep input
+      // page-level will show popup; keep input
     } finally {
       pendingRef.current = false;
     }
@@ -50,7 +76,7 @@ export default function PinInput({
 
   return (
     <div className="pin-input-root">
-      <div className="pin-dots" aria-hidden>
+      <div className="pin-dots" aria-hidden ref={dotsRef}>
         {Array.from({ length: requiredLength }, (_, i) => {
           const filled = i < input.length;
           return (
@@ -68,4 +94,7 @@ export default function PinInput({
       />
     </div>
   );
-}
+});
+
+PinInput.displayName = 'PinInput';
+export default PinInput;

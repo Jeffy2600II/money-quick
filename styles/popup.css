@@ -1,0 +1,62 @@
+/* Popup / toast styles (reusable across the app)
+   - fixed, centered horizontally, near bottom
+   - fade-in/out, does not affect layout (pointer-events controlled)
+*/
+
+.mq-popup-root {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 10%;               /* near bottom but not flush */
+  z-index: 12000;
+  pointer-events: none;      /* allow clicks through when hidden */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* visible: make pointer events active so user can interact (if needed) */
+.mq-popup-root.visible {
+  pointer-events: auto;
+}
+
+/* card */
+.mq-popup-card {
+  min-width: 220px;
+  max-width: 90vw;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 12px 18px;
+  box-sizing: border-box;
+  border: 1px solid rgba(15,23,42,0.06);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* no shadows (per your style) */
+  opacity: 0;
+  transform: translateY(8px) scale(0.995);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+/* when visible -> fade in and slide slightly up */
+.mq-popup-root.visible .mq-popup-card {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* message text style (muted like prompts) */
+.mq-popup-message {
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 15px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* small responsive sizing */
+@media (max-width: 480px) {
+  .mq-popup-card { padding: 10px 14px; min-width: 160px; }
+  .mq-popup-message { font-size: 14px; }
+}

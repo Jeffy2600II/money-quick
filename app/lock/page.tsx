@@ -1,33 +1,37 @@
 'use client';
-import { useState } from "react";
-import PinInput from "../../components/PinInput";
+import { useRef } from "react";
+import PinInput, { PinInputHandle } from "../../components/PinInput";
 import * as pinClient from "../../lib/pinClient";
 import { useLoader } from "../../components/LoaderProvider";
+import { usePopup } from "../../components/PopupProvider";
 
 export default function LockPage() {
-  const [error, setError] = useState("");
-  const { show, hide } = useLoader();
+  const pinRef = useRef < PinInputHandle | null > (null);
+  const loader = useLoader();
+  const popup = usePopup();
   
   async function handleSubmit(pin: string) {
-    setError("");
-    show('กำลังตรวจสอบ...'); // เรียก global loader พร้อมข้อความ
+    loader.show('กำลังตรวจสอบ...');
     try {
       const res = await pinClient.checkPin(pin);
       if (res.ok && res.data?.ok) {
         try { localStorage.setItem("pin", pin); } catch {}
-        show('กำลังเข้าสู่ระบบ...'); // เปลี่ยนข้อความถ้าต้องการ
-        // ให้เวลา UX เล็กน้อยก่อน redirect (ไม่จำเป็น)
+        loader.show('กำลังเข้าสู่ระบบ...');
         setTimeout(() => {
-          hide();
+          loader.hide();
           window.location.href = "/";
         }, 350);
       } else {
-        hide();
-        setError("PIN ไม่ถูกต้อง");
+        loader.hide();
+        // show popup and flash red on pin-dots
+        popup.show('PIN ไม่ถูกต้อง', { duration: 2200 });
+        pinRef.current?.triggerError(900);
+        // do not set page inline error
       }
     } catch (e) {
-      hide();
-      setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+      loader.hide();
+      popup.show('เกิดข้อผิดพลาด กรุณาลองใหม่', { duration: 2500 });
+      pinRef.current?.triggerError(900);
     }
   }
   
@@ -43,9 +47,7 @@ export default function LockPage() {
         <div className="pin-prompt">กรุณาใส่รหัสผ่าน</div>
       </div>
 
-      <PinInput onSubmit={handleSubmit} requiredLength={6} />
-
-      {error && <div className="mt-3 text-red-500">{error}</div>}
+      <PinInput ref={pinRef} onSubmit={handleSubmit} requiredLength={6} />
 
       <a className="forgot-link" onClick={handleForgot}>ลืมรหัสผ่าน</a>
     </main>
