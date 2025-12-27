@@ -1,5 +1,6 @@
-/* Loader overlay styles (ปรับปรุง: ขนาดตัวอักษรและโลโก้ใหญ่ขึ้น,
-   overlay เป็นสีขาวทึบเต็มจอ เพื่อเน้นความชัดและความเรียบง่าย)
+/* Loader overlay styles (แยกไฟล์เพื่อความยืดหยุ่น)
+   Updated: เพิ่มขนาดตัวอักษรของโลโก้และข้อความสถานะ,
+   เปลี่ยน backdrop ให้เป็นสีขาวทึบเพื่อการอ่านที่ชัดขึ้น
 */
 
 .mq-loader-root {
@@ -8,7 +9,7 @@
   display: none;
   align-items: center;
   justify-content: center;
-  z-index: 99999; /* ยกขึ้นให้สูงเพื่อให้แน่ใจว่าอยู่เหนือทุกคอนเทนต์ */
+  z-index: 9999;
   pointer-events: none;
 }
 
@@ -17,95 +18,77 @@
   pointer-events: auto;
 }
 
-/* เปลี่ยน backdrop เป็นสีขาวทึบเต็มจอ (ไม่โปร่งใส) */
+/* backdrop ให้ทึบเป็นสีขาว (opaque) เพื่อความคอนทราสต์สูง
+   — เปลี่ยนจากโปร่งใส + blur มาเป็นแผ่นขาวทึบตามคำขอ */
 .mq-loader-backdrop {
   position: absolute;
   inset: 0;
   background: #ffffff; /* ขาวทึบ */
-  /* ลบ blur เล็กน้อยเพื่อให้ภาพคมชัด แต่สามารถเปิดได้อีกครั้งหากต้องการ */
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  /* หากต้องการลดความแข็งให้ใส่ opacity เป็น 0.98 หรือ similar */
+  backdrop-filter: none; /* ไม่มี blur เพื่อคมชัด */
 }
 
-/* card กึ่งกลาง — ปรับให้ใหญ่และเรียบง่ายขึ้น */
+/* card กึ่งกลาง — ขยายขนาดเล็กน้อยเพื่อรองรับตัวอักษรใหญ่ */
 .mq-loader-card {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   padding: 22px 32px;
   border-radius: 14px;
-  background: #ffffff; /* เก็บเป็นขาวเช่นกัน (เนียนกับ backdrop) */
-  min-width: 280px;
+  background: #ffffff; /* ตามดีไซน์หน้าพิน */
+  min-width: 260px;
   max-width: 92%;
   box-sizing: border-box;
-  z-index: 2; /* ให้อยู่เหนือ backdrop */
-  /* ไม่มี shadow ตามดีไซน์ แต่วางขอบเล็กน้อยเพื่อให้การ์ดแยกจากพื้นหลัง */
-  border: 1px solid rgba(15,23,42,0.06);
+  z-index: 1;
+  /* ไม่มี shadow ตามที่ต้องการ */
+  border: 1px solid rgba(15,23,42,0.04);
 }
 
-/* โลโก้ : ขยายขนาดเพื่อให้เห็นชัดเจนบน overlay */
-.mq-loader-logo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  line-height: 1;
-}
-
-/* ชื่อแถว 1 — ใหญ่และชัด */
+/* โลโก้ (reuse รูปแบบโลโก้หน้าอื่น) */
+/* ขนาดโลโก้/ตัวอักษรเพิ่มขึ้นเพื่อเน้นความชัดเจน */
 .mq-loader-logo .logo-line1 {
   font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
-  font-size: 28px; /* เพิ่มจาก 20 */
+  font-size: 26px; /* เพิ่มขึ้นจาก 20 */
   font-weight: 800;
   color: #111827;
   line-height: 1;
   margin: 0;
-  letter-spacing: 0.2px;
 }
-
-/* ชื่อแถว 2 — เน้นด้วยสี accent และขนาดใหญ่ขึ้นเล็กน้อย */
 .mq-loader-logo .logo-line2 {
   font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
-  font-size: 24px; /* เพิ่มจาก 18 */
+  font-size: 22px; /* เพิ่มขึ้นจาก 18 */
   font-weight: 800;
   color: #00c48a;
   margin-top: -6px;
-  letter-spacing: 0.2px;
 }
 
-/* ข้อความสถานะ: ขนาดใหญ่ขึ้นเพื่อความชัดเจนบน overlay */
+/* ข้อความสถานะ (muted color) — ขนาดใหญ่ขึ้นเพื่อให้อ่านง่าย */
 .mq-loader-message {
   color: #6b7280;
-  font-size: 18px; /* เพิ่มจาก 15 */
-  font-weight: 700; /* หนากว่าเดิมเล็กน้อยเพื่อเน้น */
+  font-size: 18px; /* เพิ่มขึ้นจาก 15 */
+  font-weight: 700; /* หนาขึ้นเล็กน้อยเพื่อความคม */
   text-align: center;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-/* เพิ่ม spinner ขนาดใหญ่สำหรับสัญญาณสถานะ */
+/* ปรับขนาด spinner เล็กน้อยให้สมดุลกับข้อความใหญ่ */
 .loading-spinner {
-  width: 58px;  /* เพิ่มขนาด */
-  height: 58px;
+  width: 54px; /* ขยายจาก 46px */
+  height: 54px;
   border-radius: 9999px;
-  border: 5px solid rgba(0,0,0,0.06);
+  border: 5px solid rgba(0,0,0,0.08);
   border-top-color: var(--accent);
   animation: spin 900ms linear infinite;
 }
-
-/* ใช้ keyframe เดิมสำหรับการหมุน */
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ปรับแต่งการแสดงบนมือถือให้สัดส่วนเหมาะสม */
+/* ปรับบนมือถือ: คงความใหญ่แต่พอเหมาะ */
 @media (max-width: 480px) {
-  .mq-loader-card {
-    padding: 18px 22px;
-    min-width: 240px;
-  }
+  .mq-loader-card { padding: 16px 20px; min-width: 220px; }
   .mq-loader-logo .logo-line1 { font-size: 22px; }
   .mq-loader-logo .logo-line2 { font-size: 18px; margin-top: -4px; }
   .mq-loader-message { font-size: 16px; }
-  .loading-spinner { width: 48px; height: 48px; border-width: 4px; }
+  .loading-spinner { width: 46px; height: 46px; border-width: 4px; }
 }
