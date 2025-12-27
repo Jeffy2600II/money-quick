@@ -3,6 +3,7 @@ import '../styles/globals.css';
 import PopupProvider from '../components/PopupProvider';
 import LoaderProvider from '../components/LoaderProvider';
 import ServiceWorkerRegister from '../components/ServiceWorkerRegister';
+import PreventPullToRefresh from '../components/PreventPullToRefresh';
 import { SWRConfig } from 'swr';
 import { fetchWithTimeout } from '../lib/fetcher';
 
@@ -16,6 +17,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         */}
       </head>
       <body>
+        {/* Prevent pull-to-refresh / overscroll gesture on supported browsers */}
+        <PreventPullToRefresh />
+
         <SWRConfig value={{ fetcher: (resource: string, init?: any) => fetchWithTimeout(resource, init) }}>
           <PopupProvider>
             <LoaderProvider>

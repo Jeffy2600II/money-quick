@@ -65,6 +65,19 @@ html, body, #__next {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* ป้องกัน overscroll แบบ modern browsers */
+html, body, #__next {
+  overscroll-behavior-y: none; /* ป้องกัน pull-to-refresh / navigation bounce */
+  -webkit-overflow-scrolling: auto; /* reset default momentum scrolling if needed */
+}
+
+/* หากคุณใช้ส่วนที่เลื่อนภายใน (เช่น div.scrollable) ให้ระบุให้ชัดเจนว่าอนุญาต overscroll เฉพาะที่นั่น:
+.scrollable {
+  overscroll-behavior: auto;
+  -webkit-overflow-scrolling: touch;
+}
+*/
+
 /* Allow selection for form controls and contenteditable */
 input, textarea, select, option, [contenteditable="true"] {
   user-select: text !important;
