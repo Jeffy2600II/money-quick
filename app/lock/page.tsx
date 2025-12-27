@@ -10,11 +10,10 @@ export default function LockPage() {
   const loader = useLoader();
   const popup = usePopup();
   
-  // New: local verifying state to disable input while checking (no global overlay)
+  // local verifying state to disable input while checking (no global overlay)
   const [verifying, setVerifying] = useState(false);
   
   async function handleSubmit(pin: string) {
-    // Do not show global overlay for quick check; only disable input locally
     setVerifying(true);
     try {
       const res = await pinClient.checkPin(pin);
@@ -29,9 +28,7 @@ export default function LockPage() {
           window.location.href = "/";
         }, 350);
       } else {
-        // failed
         setVerifying(false);
-        // show popup and flash red on pin-dots
         popup.show('PIN ไม่ถูกต้อง', { duration: 2200 });
         pinRef.current?.triggerError(900);
       }
@@ -43,13 +40,8 @@ export default function LockPage() {
   }
   
   function handleForgot() {
-    // Use central loader briefly so navigation feels consistent (and hides server fallback)
-    loader.show('กำลังไปหน้าตั้งรหัสผ่านใหม่...');
-    // give browser a moment to show loader, then navigate
-    setTimeout(() => {
-      loader.hide();
-      window.location.href = "/setup-pin?force=1";
-    }, 180);
+    // Navigate directly to setup-pin without showing page-level loader
+    window.location.href = "/setup-pin?force=1";
   }
   
   return (

@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import PinInput from "../../components/PinInput";
 import * as pinClient from "../../lib/pinClient";
 import { useLoader } from "../../components/LoaderProvider";
@@ -10,17 +10,6 @@ export default function SetupPinClient() {
   const searchParams = useSearchParams();
   const forceMode = searchParams?.get('force') === '1' || searchParams?.get('force') === 'true';
   const loader = useLoader();
-  
-  // Show a short central loader on mount so navigation uses central loader
-  useEffect(() => {
-    loader.show('กำลังโหลดหน้า...');
-    const t = setTimeout(() => loader.hide(), 220);
-    return () => {
-      clearTimeout(t);
-      loader.hide();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   
   const [step, setStep] = useState < 'first' | 'confirm' | 'done' > ('first');
   const [pin, setPin] = useState('');
