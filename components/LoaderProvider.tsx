@@ -1,7 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import ReactDOM from 'react-dom';
 import '../styles/loader.css'; // โหลดสไตล์เฉพาะของ loader
 
 type LoaderContextType = {
@@ -34,26 +33,24 @@ export default function LoaderProvider({ children }: { children: React.ReactNode
     },
     hide: () => {
       setVisible(false);
-      // ไม่รีเซ็ตข้อความ ให้ยังคงข้อความล่าสุดไว้จนกว่าจะมีการเปลี่ยน
+      // ไม่รีเซ็ตข้อความ เพื่อเก็บข้อความล่าสุดไว้จนกว่าจะมีการเปลี่ยน
     },
   }), []);
   
   return (
     <LoaderContext.Provider value={api}>
       {children}
-      {typeof window !== 'undefined' && ReactDOM.createPortal(
-        <div className={`mq-loader-root ${visible ? 'visible' : ''}`} aria-hidden={!visible}>
-          <div className="mq-loader-backdrop" />
-          <div className="mq-loader-card" role="status" aria-live="polite">
-            <div className="mq-loader-logo">
-              <div className="logo-line1">Money</div>
-              <div className="logo-line2">quick</div>
-            </div>
-            <div className="mq-loader-message">{message}</div>
+      {/* Render overlay directly (no portal) — position:fixed + high z-index ensures it sits above content */}
+      <div className={`mq-loader-root ${visible ? 'visible' : ''}`} aria-hidden={!visible}>
+        <div className="mq-loader-backdrop" />
+        <div className="mq-loader-card" role="status" aria-live="polite">
+          <div className="mq-loader-logo">
+            <div className="logo-line1">Money</div>
+            <div className="logo-line2">quick</div>
           </div>
-        </div>,
-        document.body
-      )}
+          <div className="mq-loader-message">{message}</div>
+        </div>
+      </div>
     </LoaderContext.Provider>
   );
 }
