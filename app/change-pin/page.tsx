@@ -10,22 +10,24 @@ export default function ChangePinPage() {
   const [oldPin, setOldPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [error, setError] = useState('');
+  // New: local verifying state for old-pin check
+  const [verifyingOld, setVerifyingOld] = useState(false);
   
   async function handleOldPin(pinValue: string) {
     setError('');
-    loader.show('กำลังตรวจสอบ PIN เดิม...');
+    setVerifyingOld(true);
     try {
       const res = await pinClient.checkPin(pinValue);
       if (res.ok && res.data?.ok) {
         setOldPin(pinValue);
         setStep('new');
-        loader.hide();
+        setVerifyingOld(false);
       } else {
-        loader.hide();
+        setVerifyingOld(false);
         setError('PIN เดิมไม่ถูกต้อง');
       }
     } catch {
-      loader.hide();
+      setVerifyingOld(false);
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่');
     }
   }
@@ -76,7 +78,7 @@ export default function ChangePinPage() {
       {step === 'old' && (
         <>
           <div className="text-center" style={{ color: '#6b7280', marginBottom: 8 }}>กรุณาใส่ PIN เก่า</div>
-          <PinInput onSubmit={handleOldPin} requiredLength={6} />
+          <PinInput onSubmit={handleOldPin} requiredLength={6} disabled={verifyingOld} />
         </>
       )}
       {step === 'new' && (

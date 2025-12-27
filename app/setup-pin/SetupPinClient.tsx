@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PinInput from "../../components/PinInput";
 import * as pinClient from "../../lib/pinClient";
 import { useLoader } from "../../components/LoaderProvider";
@@ -11,9 +11,21 @@ export default function SetupPinClient() {
   const forceMode = searchParams?.get('force') === '1' || searchParams?.get('force') === 'true';
   const loader = useLoader();
   
+  // Show a short central loader on mount so navigation uses central loader
+  useEffect(() => {
+    loader.show('กำลังโหลดหน้า...');
+    const t = setTimeout(() => loader.hide(), 220);
+    return () => {
+      clearTimeout(t);
+      loader.hide();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
   const [step, setStep] = useState < 'first' | 'confirm' | 'done' > ('first');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false); // disable input while saving
   
   async function handleFirst(pinValue: string) {
     setPin(pinValue);
@@ -23,9 +35,11 @@ export default function SetupPinClient() {
   async function handleConfirm(pinValue: string) {
     setError('');
     loader.show('กำลังบันทึก...');
+    setSaving(true);
     try {
       if (pin !== pinValue) {
         loader.hide();
+        setSaving(false);
         setError('PIN ไม่ตรงกัน กรุณาตั้งใหม่');
         setPin('');
         setStep('first');
@@ -42,10 +56,12 @@ export default function SetupPinClient() {
         }, 300);
       } else {
         loader.hide();
+        setSaving(false);
         setError(res.error || 'ไม่สามารถบันทึก PIN ได้');
       }
     } catch {
       loader.hide();
+      setSaving(false);
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่');
     }
   }
@@ -60,13 +76,13 @@ export default function SetupPinClient() {
 
       {step === 'first' && (
         <>
-          <PinInput onSubmit={handleFirst} requiredLength={6} />
+          <PinInput onSubmit={handleFirst} requiredLength={6} disabled={saving} />
           <div className="text-center mt-2" style={{ color: '#6b7280' }}>ตั้ง PIN ใหม่</div>
         </>
       )}
       {step === 'confirm' && (
         <>
-          <PinInput onSubmit={handleConfirm} requiredLength={6} />
+          <PinInput onSubmit={handleConfirm} requiredLength={6} disabled={saving} />
           <div className="text-center mt-2" style={{ color: '#6b7280' }}>ยืนยัน PIN อีกครั้ง</div>
         </>
       )}

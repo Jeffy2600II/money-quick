@@ -1,9 +1,11 @@
 /* ==========================================================================
-   Money Quick — Global styles (final)
-   - Includes: centered layout, accent-first pin dots, neutral-key borders,
-     larger digits & SVG, no shadows, accessible exceptions for inputs
-   - IMPORTANT: user-select disabled globally for UI elements (prevents text
-     selection), but inputs/textareas/selects remain selectable via exception.
+   Money Quick — Global styles (final, updated)
+   - Full styles including improvements:
+     * Centralized "disabled / verifying" visual state for PinInput + Numpad
+     * Smoother transitions for interactive elements
+     * Slight visual polish for disabled/verifying state (dim + pointer-events)
+     * Minor accessibility improvements (focus-visible)
+   - Comments and structure preserved from original file
    ========================================================================== */
 
 /* Import font */
@@ -44,6 +46,7 @@
 
   /* transitions */
   --fast: 120ms;
+  --fast-ease: cubic-bezier(.2,.9,.2,1);
 }
 
 /* Reset */
@@ -149,12 +152,13 @@ html, body {
   border-radius: 9999px;
   border: var(--thin) solid var(--accent); /* accent used from start */
   background: transparent;
-  transition: background var(--fast) ease, border-color var(--fast) ease;
+  transition: background var(--fast) var(--fast-ease), border-color var(--fast) var(--fast-ease), transform 160ms var(--fast-ease);
   box-sizing: border-box;
 }
 .pin-dot.filled {
   background: var(--accent);
   border-color: var(--accent);
+  transform: scale(1.02);
 }
 
 /* -------------------------
@@ -216,15 +220,16 @@ html, body {
   align-items:center;
   justify-content:center;
   cursor:pointer;
-  transition: border-color var(--fast) ease;
+  transition: border-color var(--fast) var(--fast-ease), transform 120ms var(--fast-ease), opacity var(--fast) var(--fast-ease);
   user-select: none; /* prevent selection of digit labels */
   -webkit-tap-highlight-color: transparent;
   outline: none;
   box-sizing: border-box;
+  will-change: transform, opacity;
 }
-.numpad-key:focus { outline: none; }
+.numpad-key:focus { outline: none; box-shadow: 0 0 0 3px rgba(0,196,138,0.08); border-color: var(--accent); }
 .numpad-key:active,
-.numpad-key:focus-visible { border-color: var(--accent); }
+.numpad-key:focus-visible { border-color: var(--accent); transform: scale(0.985); }
 
 /* Digit label */
 .numpad-key-label {
@@ -253,7 +258,7 @@ html, body {
   box-sizing: border-box;
 }
 .numpad-key-back:active,
-.numpad-key-back:focus { background: transparent; }
+.numpad-key-back:focus { background: transparent; transform: scale(0.985); }
 
 /* Backspace SVG size synced to digit size */
 .numpad-key-icon svg,
@@ -268,7 +273,7 @@ html, body {
 
 /* Disabled */
 .numpad-key[disabled],
-.numpad-key-back[disabled] { opacity: 0.45; cursor: not-allowed; }
+.numpad-key-back[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 
 /* Confirm button */
 .confirm-button {
@@ -294,7 +299,10 @@ html, body {
   padding-bottom: 2px;
 }
 
-/* Loading overlay (kept separate in loader.css) */
+/* -------------------------
+   LOADER / POPUP / MISC STYLES (kept small)
+   - Loading overlay (kept separate in loader.css)
+   ------------------------- */
 .loading-overlay {
   position: fixed;
   inset: 0;
@@ -314,7 +322,39 @@ html, body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Responsive adjustments */
+/* -------------------------
+   PinInput "disabled/verifying" state improvements
+   - When parent sets disabled (via PinInput prop) we dim the whole pin input block
+   - Use pointer-events:none to prevent any interaction
+   - Add subtle visual for numpad keys inside disabled wrapper (further dim + scale)
+   - This centralizes the verifying look/feel so pages don't need to show full overlay
+   ------------------------- */
+
+/* Block-level dim + interaction lock */
+.pin-input-root.pin-input-disabled {
+  opacity: 0.55;
+  pointer-events: none; /* ensure all child interactions disabled */
+  transition: opacity 140ms var(--fast-ease);
+  filter: grayscale(6%); /* subtle desaturation for "inactive" feel */
+}
+
+/* Additional style to ensure numpad keys inside a disabled root look inactive */
+/* Note: pointer-events already none on parent but this provides clearer visual */
+.pin-input-root.pin-input-disabled .numpad-key,
+.pin-input-root.pin-input-disabled .numpad-key-back {
+  opacity: 0.45;
+  transform: scale(0.995);
+}
+
+/* For accessibility: when we disable by CSS, ensure focusable elements lose focus outline */
+.pin-input-root.pin-input-disabled :focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* -------------------------
+   Responsive adjustments
+   ------------------------- */
 @media (max-width: 480px) {
   :root {
     --key-size: var(--key-size-sm);
