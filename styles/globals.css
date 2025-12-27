@@ -1,17 +1,16 @@
-/* Full updated CSS — tuned to look like K+ layout but using our "Money quick" text logo */
-/* Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+/* --- Updated PIN + Numpad styles --- */
 
-:root{
-  --mq-green: #05a46a; /* main green (tuned) */
-  --mq-green-dark: #047a53;
-  --mq-border: rgba(4,124,83,0.14);
-  --page-bg: #ffffff; /* keep clean white like K+ */
+/* Fonts + root colors (tuned) */
+:root {
+  --mq-green: #00c48a;        /* vivid light green */
+  --mq-green-dark: #04996f;
+  --mq-border: rgba(15,23,42,0.06); /* very light gray border */
+  --page-bg: #ffffff;
   --muted: #6b7280;
-  --text: #1f2937;
+  --text: #0f172a;
 }
 
-/* Reset / base */
+/* Base reset */
 html, body {
   height: 100%;
   margin: 0;
@@ -25,7 +24,7 @@ html, body {
   box-sizing: border-box;
 }
 
-/* Centered PIN page similar to K+ */
+/* PIN page container (centered vertically content starts near top like K+) */
 .pin-page {
   min-height: 100vh;
   display: flex;
@@ -34,16 +33,13 @@ html, body {
   padding-top: 34px;
 }
 
-/* We'll remove close button per request — pin-top kept for spacing only */
-.pin-top { width:100%; max-width:420px; height:44px; }
-
-/* Logo: two-line text like K+ style, but our words and colors */
+/* Brand / logo spacing - improved spacing for "application" look */
 .pin-brand {
   display:flex;
   flex-direction:column;
   align-items:center;
-  gap:6px;
-  margin-bottom: 6px;
+  gap:8px;
+  margin-bottom: 14px; /* more breathing room above dots */
 }
 .logo {
   display:flex;
@@ -51,13 +47,12 @@ html, body {
   align-items:center;
   line-height:1;
 }
-/* first word (Money) — dark */
 .logo-line1 {
-  font-size:34px;
+  font-size:36px;
   font-weight:700;
   color: #111827;
+  letter-spacing: -0.6px;
 }
-/* second word (quick) — green */
 .logo-line2 {
   font-size:30px;
   font-weight:700;
@@ -69,101 +64,145 @@ html, body {
 .pin-prompt {
   margin-top: 8px;
   font-size: 18px;
-  font-weight:600;
+  font-weight: 600;
   color: var(--muted);
   margin-bottom: 12px;
 }
 
-/* PIN dots: thinner border (~1px) and filled fully when entered */
+/* PIN dots: thinner border and filled fully (no inner gap) */
 .pin-dots {
   display:flex;
   gap: 16px;
-  justify-content: center;
-  margin-bottom: 18px;
+  justify-content:center;
+  margin-bottom: 20px;
 }
 .pin-dot {
   width: 18px;
   height: 18px;
   border-radius: 9999px;
-  border: 1px solid var(--mq-border);
+  border: 0.9px solid var(--mq-border); /* thin */
   background: transparent;
-  box-sizing: border-box;
   transition: background-color 140ms ease, border-color 140ms ease;
+  box-sizing: border-box;
 }
 .pin-dot.filled {
   background: var(--mq-green);
   border-color: var(--mq-green);
 }
 
-/* Numpad */
+/* Numpad grid: center exactly, use width:fit-content to center grid and avoid right-shift */
 .numpad-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 22px;
-  width: 100%;
-  max-width: 420px;
-  justify-items: center;
-  padding: 8px 28px 32px;
+  width: -moz-fit-content;
+  width: fit-content;
+  margin: 0 auto; /* center horizontally */
+  padding: 0 16px 28px;
+  box-sizing: border-box;
 }
-.numpad-cell { width: 92px; height: 92px; }
 
-/* circular key style: thin border 1px (or 1.2) */
+/* cell for empty slots to keep grid shape */
+.numpad-cell {
+  width: 96px;
+  height: 96px;
+}
+
+/* Key: circular, thin border (~1px), no scale on active, only border color changes */
 .numpad-key {
-  width: 92px;
-  height: 92px;
+  width: 96px;
+  height: 96px;
   border-radius: 9999px;
   background: transparent;
-  border: 1px solid var(--mq-border);
+  border: 1px solid var(--mq-border); /* thin */
   display:flex;
   align-items:center;
   justify-content:center;
   cursor:pointer;
-  transition: border-color 140ms ease, background-color 140ms ease, box-shadow 120ms ease;
+  transition: border-color 140ms ease, box-shadow 120ms ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none; /* remove focus ring as requested */
+  box-sizing: border-box;
+}
+
+/* Remove focus visuals entirely (per request) */
+.numpad-key:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Active/focus: do NOT change background or scale, only change border color */
+.numpad-key:active,
+.numpad-key:focus-visible {
+  border-color: var(--mq-green-dark);
+  /* no background change */
+  box-shadow: 0 8px 22px rgba(4,153,111,0.04);
+}
+
+/* Backspace key: no border, no active effect, minimal icon only */
+.numpad-key-back {
+  width: 96px;
+  height: 96px;
+  border-radius: 9999px;
+  background: transparent;
+  border: none; /* no border */
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition: none; /* no active change */
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   outline: none;
   box-sizing: border-box;
 }
 
-/* No scale transform on active; only color change */
-.numpad-key:active,
-.numpad-key:focus {
-  border-color: var(--mq-green-dark);
-  background: rgba(4,124,83,0.04);
-  box-shadow: 0 10px 30px rgba(4,124,83,0.04);
+/* Prevent any active visual on back button */
+.numpad-key-back:active,
+.numpad-key-back:focus {
+  background: transparent;
+  box-shadow: none;
+  border: none;
 }
 
-/* Disabled */
-.numpad-key[disabled] { opacity: 0.45; cursor: not-allowed; }
-
-/* labels */
+/* label style (digits) — slightly smaller and bold-black */
 .numpad-key-label {
-  font-size: 2rem;
-  color: #0f172a;
-  font-weight:600;
+  font-size: 1.6rem; /* reduced a bit */
+  color: #000000;    /* black as requested */
+  font-weight: 600;
+  line-height: 1;
 }
-.numpad-key-icon svg { display:block; color: #0f172a; }
+
+/* svg icon color (back) */
+.numpad-key-icon svg {
+  display:block;
+  color: #000000; /* black icon */
+  stroke: currentColor;
+}
+
+/* disabled look */
+.numpad-key[disabled] { opacity: 0.45; cursor: not-allowed; }
+.numpad-key-back[disabled] { opacity: 0.45; cursor: not-allowed; }
 
 /* forgot link */
 .forgot-link {
   margin-top: 14px;
   color: var(--mq-green);
-  font-weight:600;
-  border-bottom: 2px solid rgba(4,124,83,0.12);
+  font-weight: 600;
+  border-bottom: 2px solid rgba(0,196,138,0.12);
   padding-bottom: 2px;
 }
 
-/* spacing tweaks */
-.text-center { text-align:center; }
-.mt-2 { margin-top: .5rem; }
-.mt-3 { margin-top: .75rem; }
-.mt-4 { margin-top: 1rem; }
-
-/* responsive */
+/* responsive adjustments */
 @media (max-width: 480px) {
   .pin-dot { width: 14px; height: 14px; }
-  .numpad-cell, .numpad-key { width: 72px; height: 72px; }
-  .numpad-grid { gap: 14px; padding: 8px 18px 28px; }
-  .logo-line1 { font-size:28px; }
-  .logo-line2 { font-size:24px; margin-top:-4px; }
+  .numpad-cell, .numpad-key, .numpad-key-back { width: 76px; height: 76px; }
+  .numpad-grid { gap: 14px; padding: 0 12px 22px; }
+  .logo-line1 { font-size: 28px; }
+  .logo-line2 { font-size: 24px; margin-top: -4px; }
 }
+
+/* small helpers */
+.text-center { text-align: center; }
+.mt-2 { margin-top: .5rem; }

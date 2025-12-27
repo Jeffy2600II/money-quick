@@ -27,11 +27,12 @@ export default function Numpad({
     leftCell, 0, 'back'
   ];
   
+  // Minimal backspace SVG (clean / common style)
   const BackSvg = () => (
-    <svg width="26" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="22" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path d="M20 7H8L4 12l4 5h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M15 9l-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M11 9l4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M15 9l-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M11 9l4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
   
@@ -46,12 +47,15 @@ export default function Numpad({
 
         if (isOk && !onOk) return <div key={idx} className="numpad-cell" />;
 
+        // apply special class for back key (no border, no active)
+        const btnClass = isBack ? "numpad-key numpad-key-back" : "numpad-key";
+
         return (
           <button
             key={idx}
             type="button"
             aria-label={isNum ? `Number ${c}` : isBack ? 'Backspace' : 'Confirm'}
-            className="numpad-key"
+            className={btnClass}
             onClick={() => {
               if (disabled) return;
               if (isNum) onNum(c as number);
