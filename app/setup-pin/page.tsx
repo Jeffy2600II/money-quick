@@ -4,60 +4,65 @@ import PinInput from "../../components/PinInput";
 import * as pinClient from "../../lib/pinClient";
 
 export default function SetupPinPage() {
-  const [step, setStep] = useState < "first" | "confirm" | "done" > ("first");
-  const [pin, setPin] = useState < string > ("");
-  const [error, setError] = useState("");
+  const [step, setStep] = useState < 'first' | 'confirm' | 'done' > ('first');
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
   async function handleFirst(pinValue: string) {
     setPin(pinValue);
-    setStep("confirm");
+    setStep('confirm');
   }
   
   async function handleConfirm(pinValue: string) {
-    setError("");
+    setError('');
     setLoading(true);
     if (pin !== pinValue) {
-      setError("PIN ไม่ตรงกัน! กรุณาตั้งใหม่");
-      setPin("");
-      setStep("first");
+      setError('PIN ไม่ตรงกัน กรุณาตั้งใหม่');
+      setPin('');
+      setStep('first');
       setLoading(false);
       return false;
     }
     try {
       const res = await pinClient.setPin(pinValue);
       if (res.ok && res.data?.ok) {
-        setStep("done");
-        // ไปหน้าล็อกให้ใส่ PIN
-        window.location.href = "/lock";
+        setStep('done');
+        window.location.href = '/lock';
       } else {
-        setError(res.error || "ไม่สามารถบันทึก PIN ได้");
+        setError(res.error || 'ไม่สามารถบันทึก PIN ได้');
       }
-    } catch (e) {
-      setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+    } catch {
+      setError('เกิดข้อผิดพลาด กรุณาลองใหม่');
     } finally {
       setLoading(false);
     }
   }
   
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen">
-      <h1 className="mb-2 font-bold text-xl">ตั้ง PIN 4-6 หลัก</h1>
-      {step === "first" && (
+    <main className="pin-page">
+      <div className="pin-top" />
+      <div className="pin-brand">
+        <div className="logo"><span>K</span><span className="plus">+</span></div>
+        <div className="pin-prompt">ตั้ง PIN 4-6 หลัก</div>
+      </div>
+
+      {step === 'first' && (
         <>
-          <PinInput onSubmit={handleFirst} />
-          <p className="text-gray-500 mt-2">ตั้ง PIN ใหม่</p>
+          <PinInput onSubmit={handleFirst} min={4} max={6} />
+          <div className="text-gray-500 mt-2">ตั้ง PIN ใหม่</div>
         </>
       )}
-      {step === "confirm" && (
+      {step === 'confirm' && (
         <>
-          <PinInput onSubmit={handleConfirm} />
-          <p className="text-gray-500 mt-2">ยืนยัน PIN อีกครั้ง</p>
+          <PinInput onSubmit={handleConfirm} min={4} max={6} />
+          <div className="text-gray-500 mt-2">ยืนยัน PIN อีกครั้ง</div>
         </>
       )}
-      {step === "done" && <div>PIN ถูกบันทึกแล้ว!</div>}
-      {loading && <div className="mt-2">กำลังบันทึก...</div>}
-      {error && <div className="mt-2 text-red-500">{error}</div>}
+      {step === 'done' && <div className="text-green-600 mt-4">PIN ถูกบันทึกแล้ว!</div>}
+
+      {loading && <div className="pin-loading">กำลังบันทึก...</div>}
+      {error && <div className="mt-3 text-red-500">{error}</div>}
     </main>
   );
 }

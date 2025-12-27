@@ -2,31 +2,29 @@
 import { useEffect, useRef, useState } from "react";
 import Numpad from "./Numpad";
 
-/**
- * PinInput:
- * - แสดงวงกลมตำแหน่ง PIN จำนวน max (แต่แสดงอย่างน้อย min ช่อง)
- * - เมื่อกรอกแต่ละตำแหน่ง จะเติมวงกลมด้านใน (ไม่เปลี่ยนขนาดขอบ)
- * - auto-submit เมื่อถึง min หลัก (เรียก onSubmit)
- * - ป้องกัน double-submit และแสดงสถานะ loading เล็กน้อย
- */
 export default function PinInput({
   onSubmit,
   min = 4,
   max = 6,
+  showForgot,
+  onForgot,
 }: {
   onSubmit: (pin: string) => void | Promise<void | boolean>;
   min?: number;
   max?: number;
+  showForgot?: boolean;
+  onForgot?: () => void;
 }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const pendingRef = useRef(false);
 
+  // auto-submit เมื่อครบ min (มี debounce เล็กน้อยให้ UI แสดง)
   useEffect(() => {
     if (input.length >= min && !pendingRef.current) {
       const t = setTimeout(() => {
         void submit(input);
-      }, 80);
+      }, 100);
       return () => clearTimeout(t);
     }
   }, [input, min]);
@@ -39,12 +37,13 @@ export default function PinInput({
     try {
       const res = await onSubmit(pin);
       if (res === false) {
-        // ถ้าฟังก์ชันเรียกคืน false แปลว่าล้มเหลว ให้เก็บ input ไว้เพื่อแก้ไข
+        // ถ้าคืนค่า false ให้เก็บ input เพื่อให้ผู้ใช้แก้ไข
       } else {
+        // on success clear input
         setInput("");
       }
     } catch {
-      // page-level จะแสดง error ถ้าต้องการ
+      // page-level จะจัดการ error
     } finally {
       pendingRef.current = false;
       setLoading(false);
@@ -52,22 +51,30 @@ export default function PinInput({
   }
 
   function handleNum(n: number) {
-    setInput((prev) => (prev.length >= max ? prev : prev + String(n)));
+    setInput(prev => (prev.length >= max ? prev : prev + String(n)));
   }
   function handleBack() {
     if (pendingRef.current) return;
-    setInput((prev) => prev.slice(0, -1));
-  }
-  function handleOk() {
-    if (input.length >= min && input.length <= max) void submit(input);
+    setInput(prev => prev.slice(0, -1));
   }
 
-  const dotsCount = Math.max(min, max); // แสดงช่องเต็มตาม max แต่อย่างน้อย min ช่อง
+  // สร้าง leftSlot เป็นไอคอนลายนิ้วมือ (optional) และ rightSlot เป็นปุ่ม backspace (Numpad จะวางไว้เอง)
+  const leftSlot = showForgot ? (
+    <button type="button" className="fingerprint-btn" onClick={() => onForgot?.()}>
+      {/* simple fingerprint SVG */}
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path d="M12 1v2" stroke="#059669" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M6.5 3.3l-.9 1.6" stroke="#059669" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M3 9c0 4.5 3 7 3 7" stroke="#059669" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </button>
+  ) : null;
+
   return (
     <div className="pin-input-root">
       <div className="pin-dots" aria-hidden>
-        {Array.from({ length: dotsCount }, (_, i) => {
-          const filled = Boolean(input[i]);
+        {Array.from({ length: max }, (_, i) => {
+          const filled = i < input.length;
           return (
             <div key={i} className={`pin-dot ${filled ? "filled" : ""}`} />
           );
@@ -79,9 +86,11 @@ export default function PinInput({
       <Numpad
         onNum={handleNum}
         onBack={handleBack}
-        onOk={handleOk}
+        onOk={() => submit(input)}
         showOk={false}
         disabled={loading}
+        leftSlot={leftSlot}
+        rightSlot={null /* Backspace อยู่ที่ตำแหน่งขวาล่าง (Numpad ให้ค่า 'back') */}
       />
     </div>
   );

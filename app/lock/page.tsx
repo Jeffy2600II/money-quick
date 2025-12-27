@@ -14,7 +14,6 @@ export default function LockPage() {
       const res = await pinClient.checkPin(pin);
       if (res.ok && res.data?.ok) {
         localStorage.setItem("pin", pin);
-        // direct navigation (simple, consistent)
         window.location.href = "/";
       } else {
         setError("PIN ไม่ถูกต้อง");
@@ -24,15 +23,30 @@ export default function LockPage() {
     } finally {
       setLoading(false);
     }
-    // returning undefined/boolean not required; PinInput handles loading via Promise
+  }
+  
+  function handleForgot() {
+    // สามารถเปลี่ยนพฤติกรรมตามต้องการ (ไปหน้าลืมรหัสหรือแสดง modal)
+    window.location.href = "/setup-pin";
   }
   
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen">
-      <h1 className="mb-2 font-bold text-xl">ใส่ PIN เพื่อเข้าใช้งาน</h1>
-      <PinInput onSubmit={handleSubmit} />
-      {loading && <div className="mt-4">กำลังตรวจสอบ...</div>}
-      {error && <div className="mt-2 text-red-500">{error}</div>}
+    <main className="pin-page">
+      <div className="pin-top">
+        <button className="pin-close" aria-label="close" onClick={() => window.history.back()}>✕</button>
+      </div>
+
+      <div className="pin-brand">
+        <div className="logo"><span>K</span><span className="plus">+</span></div>
+        <div className="pin-prompt">กรุณาใส่รหัสผ่าน</div>
+      </div>
+
+      <PinInput onSubmit={handleSubmit} min={4} max={6} showForgot onForgot={handleForgot} />
+
+      {loading && <div className="pin-loading">กำลังตรวจสอบ...</div>}
+      {error && <div className="mt-3 text-red-500">{error}</div>}
+
+      <a className="forgot-link" onClick={handleForgot}>ลืมรหัสผ่าน</a>
     </main>
   );
 }
