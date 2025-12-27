@@ -7,27 +7,21 @@ import Numpad from "./Numpad";
  * - onSubmit(pin) called when pin complete
  * - expose method triggerError() to flash red on dots and optionally clear / keep input
  *
- * Tuned for professional UX:
- * - configurable submitDelay (time after full-length input before auto-submitting)
- * - ensures submit won't be retriggered during pending state
+ * New: accept `disabled` prop (parent can disable the whole input / numpad).
  */
 export type PinInputHandle = {
   triggerError: (duration?: number) => void;
 };
 
-const DEFAULT_SUBMIT_DELAY = 40; // ms - lower than before to be snappy but allow micro-batching
-
 const PinInput = forwardRef<PinInputHandle, {
   onSubmit: (pin: string) => void | Promise<void | boolean>;
   requiredLength?: number;
   disabled?: boolean;
-  submitDelay?: number;
-}>(({ onSubmit, requiredLength = 6, disabled = false, submitDelay = DEFAULT_SUBMIT_DELAY }, ref) => {
+}>(({ onSubmit, requiredLength = 6, disabled = false }, ref) => {
   const [input, setInput] = useState("");
   const pendingRef = useRef(false);
   const dotsRef = useRef<HTMLDivElement | null>(null);
   const errorTimeoutRef = useRef<number | null>(null);
-  const submitTimerRef = useRef<number | null>(null);
 
   useImperativeHandle(ref, () => ({
     triggerError(duration = 900) {
@@ -46,26 +40,13 @@ const PinInput = forwardRef<PinInputHandle, {
   }), []);
 
   useEffect(() => {
-    // When the input reaches required length and not disabled/pending, schedule a short-timed submit.
     if (input.length === requiredLength && !pendingRef.current && !disabled) {
-      if (submitTimerRef.current) window.clearTimeout(submitTimerRef.current);
-      submitTimerRef.current = window.setTimeout(() => {
+      const t = setTimeout(() => {
         void submit(input);
-        submitTimerRef.current = null;
-      }, submitDelay);
-      return () => {
-        if (submitTimerRef.current) {
-          window.clearTimeout(submitTimerRef.current);
-          submitTimerRef.current = null;
-        }
-      };
+      }, 80);
+      return () => clearTimeout(t);
     }
-    // if input shorter than required, clear pending submit
-    if (input.length < requiredLength && submitTimerRef.current) {
-      window.clearTimeout(submitTimerRef.current);
-      submitTimerRef.current = null;
-    }
-  }, [input, requiredLength, disabled, submitDelay]);
+  }, [input, requiredLength, disabled]);
 
   async function submit(pin: string) {
     if (pendingRef.current) return;
