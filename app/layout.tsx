@@ -1,14 +1,14 @@
-import '../styles/globals.css';
+'use client';
+import './globals.css';
+import LoaderProvider from '../components/LoaderProvider';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="th">
-      <head>
-        <title>money-quick</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
-      </head>
       <body>
-        {children}
+        <LoaderProvider>
+          {children}
+        </LoaderProvider>
       </body>
     </html>
   );

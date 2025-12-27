@@ -2,29 +2,31 @@
 import { useState } from "react";
 import PinInput from "../../components/PinInput";
 import * as pinClient from "../../lib/pinClient";
+import { useLoader } from "../../components/LoaderProvider";
 
 export default function ChangePinPage() {
+  const loader = useLoader();
   const [step, setStep] = useState < 'old' | 'new' | 'confirm' | 'done' > ('old');
   const [oldPin, setOldPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   
   async function handleOldPin(pinValue: string) {
     setError('');
-    setLoading(true);
+    loader.show('กำลังตรวจสอบ PIN เดิม...');
     try {
       const res = await pinClient.checkPin(pinValue);
       if (res.ok && res.data?.ok) {
         setOldPin(pinValue);
         setStep('new');
+        loader.hide();
       } else {
+        loader.hide();
         setError('PIN เดิมไม่ถูกต้อง');
       }
     } catch {
+      loader.hide();
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่');
-    } finally {
-      setLoading(false);
     }
   }
   
@@ -35,39 +37,39 @@ export default function ChangePinPage() {
   
   async function handleConfirmPin(pinValue: string) {
     setError('');
-    setLoading(true);
-    if (newPin !== pinValue) {
-      setError('PIN ใหม่ไม่ตรงกัน');
-      setStep('new');
-      setLoading(false);
-      return;
-    }
+    loader.show('กำลังเปลี่ยน PIN...');
     try {
+      if (newPin !== pinValue) {
+        loader.hide();
+        setError('PIN ใหม่ไม่ตรงกัน');
+        setStep('new');
+        return;
+      }
       const res = await pinClient.changePin(oldPin, newPin);
       if (res.ok && res.data?.ok) {
         try { localStorage.setItem('pin', newPin); } catch {}
-        window.location.href = '/';
+        loader.show('กำลังไปหน้าหลัก...');
+        setTimeout(() => {
+          loader.hide();
+          window.location.href = '/';
+        }, 300);
       } else {
+        loader.hide();
         setError(res.error || 'PIN เดิมผิด หรือเกิดข้อผิดพลาด');
         setStep('old');
       }
     } catch {
+      loader.hide();
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่');
       setStep('old');
-    } finally {
-      setLoading(false);
     }
   }
   
   return (
     <main className="pin-page">
       <div className="pin-top" />
-
       <div className="pin-brand">
-        <div className="logo">
-          <div className="logo-line1">Money</div>
-          <div className="logo-line2">quick</div>
-        </div>
+        <div className="logo"><div className="logo-line1">Money</div><div className="logo-line2">quick</div></div>
         <div className="pin-prompt">เปลี่ยนรหัส PIN</div>
       </div>
 
@@ -91,7 +93,6 @@ export default function ChangePinPage() {
       )}
       {step === 'done' && <div className="text-green-600 mt-4">เปลี่ยน PIN สำเร็จ! กำลังไปหน้าหลัก...</div>}
 
-      {loading && <div className="pin-loading"></div>}
       {error && <div className="mt-3 text-red-500">{error}</div>}
     </main>
   );

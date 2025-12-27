@@ -2,26 +2,32 @@
 import { useState } from "react";
 import PinInput from "../../components/PinInput";
 import * as pinClient from "../../lib/pinClient";
+import { useLoader } from "../../components/LoaderProvider";
 
 export default function LockPage() {
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { show, hide } = useLoader();
   
   async function handleSubmit(pin: string) {
     setError("");
-    setLoading(true);
+    show('กำลังตรวจสอบ...'); // เรียก global loader พร้อมข้อความ
     try {
       const res = await pinClient.checkPin(pin);
       if (res.ok && res.data?.ok) {
         try { localStorage.setItem("pin", pin); } catch {}
-        window.location.href = "/";
+        show('กำลังเข้าสู่ระบบ...'); // เปลี่ยนข้อความถ้าต้องการ
+        // ให้เวลา UX เล็กน้อยก่อน redirect (ไม่จำเป็น)
+        setTimeout(() => {
+          hide();
+          window.location.href = "/";
+        }, 350);
       } else {
+        hide();
         setError("PIN ไม่ถูกต้อง");
       }
     } catch (e) {
+      hide();
       setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
-    } finally {
-      setLoading(false);
     }
   }
   
@@ -32,12 +38,8 @@ export default function LockPage() {
   return (
     <main className="pin-page">
       <div className="pin-top" />
-
       <div className="pin-brand">
-        <div className="logo">
-          <div className="logo-line1">Money</div>
-          <div className="logo-line2">quick</div>
-        </div>
+        <div className="logo"><div className="logo-line1">Money</div><div className="logo-line2">quick</div></div>
         <div className="pin-prompt">กรุณาใส่รหัสผ่าน</div>
       </div>
 
