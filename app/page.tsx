@@ -6,185 +6,178 @@ import Balance from "../components/Balance";
 import BottomNav from "../components/BottomNav";
 import '../styles/dashboard.css';
 import * as pinClient from "../lib/pinClient";
-import { fetchWithTimeout } from "../lib/fetcher";
 
-type Tx = { type: 'in' | 'out' | string;amount: number;time: number };
+type Tx = { type: 'in' | 'out' | string; amount: number; time: number };
 
 const SESSION_FLAG_KEY = 'session_valid';
-const HISTORY_KEY = '/api/history';
-const BALANCE_KEY = '/api/balance';
+const HISTORY_CACHE_KEY = 'history_cache_v1';
+const BALANCE_CACHE_KEY = 'balance_cache_v1';
 
-/**
- * Dashboard — robust balance fetching
- *
- * - Balance is fetched directly from the server every time the page mounts (no persistent caching).
- * - The fetch uses a small retry/backoff strategy to reduce transient network failures.
- * - History is fetched via SWR (revalidation) but can be changed to direct fetch if you prefer.
- * - Auth still uses fast local-session check; sensitive writes on server must revalidate PIN.
- */
+// small helper to read localStorage safely
+function safeGetJSON<T>(key: string): T | null {
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+function safeSetJSON<T>(key: string, data: T) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(data));
+  } catch {}
+}
 
 export default function MainPage() {
   const router = useRouter();
-  
   const [authChecked, setAuthChecked] = useState(false);
   const [authorized, setAuthorized] = useState(false);
-  
-  const [balance, setBalance] = useState < number | null > (null);
-  const [balanceLoading, setBalanceLoading] = useState(false);
-  const [balanceError, setBalanceError] = useState < string | null > (null);
-  
-  const [error, setError] = useState < string | null > (null);
-  
-  // --- fast local auth (no DB blocking) ---
+  const [error, setError] = useState<string | null>(null);
+
+  // Fast local session check (instant)
   useEffect(() => {
     let mounted = true;
     (async function fastAuth() {
       try {
-        // check short-lived session flag
-        let sessionOk = false;
-        try {
-          const raw = window.localStorage.getItem(SESSION_FLAG_KEY);
-          if (raw) {
-            const parsed = JSON.parse(raw) as { expires ? : number } | null;
-            if (parsed?.expires && Date.now() < parsed.expires) sessionOk = true;
-          }
-        } catch {}
-        
-        if (sessionOk) {
+        // check session flag in localStorage
+        const raw = safeGetJSON<{ expires: number }>(SESSION_FLAG_KEY);
+        if (raw && raw.expires && Date.now() < raw.expires) {
           setAuthorized(true);
           setAuthChecked(true);
           return;
         }
-        
-        // fallback: check local pin existence (fast)
+        // no valid session flag: try to see if local 'pin' exists (fast)
         let localPin: string | null = null;
         try { localPin = window.localStorage.getItem('pin'); } catch { localPin = null; }
-        
+
         if (!localPin) {
+          // Not logged in locally -> immediate redirect to /lock
           router.replace('/lock');
           return;
         }
-        
-        // verify once (background) — if fails redirect to /lock
+
+        // If localPin exists, do ONE background server verify
         const check = await pinClient.checkPin(localPin);
         if (!check.ok || !check.data?.ok) {
           try { window.localStorage.removeItem('pin'); } catch {}
           router.replace('/lock');
           return;
         }
-        
-        // set short session flag to speed subsequent loads (does not affect balance fetch)
+
+        // set session flag short-lived (fast future visits)
         try {
           const SESSION_MS = 3 * 60 * 1000; // 3 minutes
-          window.localStorage.setItem(SESSION_FLAG_KEY, JSON.stringify({ expires: Date.now() + SESSION_MS }));
+          safeSetJSON(SESSION_FLAG_KEY, { expires: Date.now() + SESSION_MS });
         } catch {}
-        
+
         if (!mounted) return;
         setAuthorized(true);
         setAuthChecked(true);
       } catch (e) {
         console.error('fastAuth error', e);
-        try { window.localStorage.removeItem('pin'); } catch {}
+        try { window.localStorage.removeItem('pin'); window.localStorage.removeItem(SESSION_FLAG_KEY); } catch {}
         router.replace('/lock');
       }
     })();
-    
     return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  
-  // --- history via SWR (keeps UI responsive) ---
-  const fetcher = (url: string) =>
-    fetchWithTimeout(url, { timeout: 5000 }).then(res => {
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json();
-    });
-  
-  const { data: historyData, error: historyError } = useSWR < Tx[] > (
-    (authorized ? HISTORY_KEY : null) as any,
-    fetcher, { revalidateOnMount: true, revalidateOnFocus: false }
+
+  // prepare fallback data from local cache (so UI shows instantly)
+  const fallbackHistory = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    return safeGetJSON<Tx[]>(HISTORY_CACHE_KEY);
+  }, []);
+
+  const fallbackBalance = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    return safeGetJSON<number | { balance?: number }>(BALANCE_CACHE_KEY);
+  }, []);
+
+  // SWR keys
+  const historyKey = '/api/history';
+  const balanceKey = '/api/balance';
+
+  // useSWR calls (cast key to any to allow null when disabled)
+  const { data: historyData, error: historyError } = useSWR<Tx[]>(
+    (authorized ? historyKey : null) as any,
+    { fallbackData: (fallbackHistory ?? undefined) as any, revalidateOnMount: true }
   );
-  
+
+  const { data: rawBalanceData, error: balanceError } = useSWR<any>(
+    (authorized ? balanceKey : null) as any,
+    { fallbackData: (fallbackBalance ?? undefined) as any, revalidateOnMount: true }
+  );
+
+  // Normalize balance value:
+  // - Some API implementations return { balance: number }
+  // - Some return plain number
+  // Ensure we extract a numeric value if present.
+  const balance: number | null = (() => {
+    if (typeof rawBalanceData === 'number') return rawBalanceData;
+    if (rawBalanceData && typeof rawBalanceData === 'object') {
+      if ('balance' in rawBalanceData && typeof rawBalanceData.balance === 'number') return rawBalanceData.balance;
+      // sometimes API returns { data: { balance: ... } }
+      if ('data' in rawBalanceData && rawBalanceData.data && typeof rawBalanceData.data.balance === 'number') return rawBalanceData.data.balance;
+    }
+    // fallback: try cached fallbackBalance if it's a number
+    if (typeof fallbackBalance === 'number') return fallbackBalance;
+    if (fallbackBalance && typeof fallbackBalance === 'object' && 'balance' in fallbackBalance && typeof (fallbackBalance as any).balance === 'number') {
+      return (fallbackBalance as any).balance;
+    }
+    // otherwise null
+    return null;
+  })();
+
+  // When SWR yields history data, write to local cache (stabilize next visit)
   useEffect(() => {
-    if (historyError) {
-      console.warn('history fetch error', historyError);
-      setError('เกิดปัญหาในการดึงประวัติข้อมูล — ระบบจะพยายามใหม่');
+    if (historyData) safeSetJSON(HISTORY_CACHE_KEY, historyData.slice(0, 200)); // cap size
+  }, [historyData]);
+
+  useEffect(() => {
+    if (typeof balance === 'number') safeSetJSON(BALANCE_CACHE_KEY, balance);
+  }, [balance]);
+
+  // Combined error handling
+  useEffect(() => {
+    if (historyError || balanceError) {
+      console.warn('SWR fetch error', { historyError, balanceError });
+      setError('เกิดปัญหาในการดึงข้อมูล — ระบบจะพยายามโหลดใหม่เล็กน้อย');
     } else {
       setError(null);
     }
-  }, [historyError]);
-  
-  // --- balance: direct fetch every time, robust retry ---
-  async function fetchBalanceWithRetry(attempts = 3) {
-    setBalanceLoading(true);
-    setBalanceError(null);
-    let lastErr: any = null;
-    for (let i = 0; i < attempts; i++) {
-      try {
-        const res = await fetchWithTimeout(BALANCE_KEY, { timeout: 4000 });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        // Expect server JSON: { balance: number } (adjust if API differs)
-        const b = Number(json?.balance ?? json);
-        if (!Number.isFinite(b)) throw new Error('Invalid balance value');
-        setBalance(b);
-        setBalanceLoading(false);
-        setBalanceError(null);
-        return;
-      } catch (e) {
-        lastErr = e;
-        // small exponential backoff (avoid blocking too long)
-        const delay = 150 * Math.pow(2, i); // 150ms, 300ms, 600ms
-        await new Promise(r => setTimeout(r, delay));
-      }
-    }
-    console.error('fetchBalanceWithRetry failed', lastErr);
-    setBalance(null);
-    setBalanceLoading(false);
-    setBalanceError('ไม่สามารถดึงยอดคงเหลือได้ขณะนี้');
-  }
-  
-  // trigger balance fetch as soon as authorized (no caching, always fetch)
-  useEffect(() => {
-    if (!authorized) return;
-    let cancelled = false;
-    (async () => {
-      await fetchBalanceWithRetry(3);
-      if (cancelled) return;
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authorized]);
-  
-  // render gating: don't render dashboard until authChecked is complete (fast redirect otherwise)
+  }, [historyError, balanceError]);
+
+  // If auth not yet checked, render nothing so redirect is instant (no flicker)
   if (!authChecked) return null;
   if (!authorized) return null;
-  
+
+  // Use data from SWR (or fallback caches)
   const history = historyData ?? [];
-  const sorted = [...history].sort((a, b) => (b.time || 0) - (a.time || 0));
+  const sorted = [...(history || [])].sort((a, b) => (b.time || 0) - (a.time || 0));
   const recent = sorted.slice(0, 3);
-  const totals = history.reduce((acc, tx) => {
+  const totals = (history || []).reduce((acc, tx) => {
     if (tx.type === 'in') acc.in += Number(tx.amount || 0);
     else acc.out += Number(tx.amount || 0);
     return acc;
   }, { in: 0, out: 0 });
-  
+
   function formatCurrency(n: number | null) {
     if (n === null) return '—';
     return `฿ ${n.toLocaleString()}`;
   }
-  
-  function formatDateThai(ts ? : number) {
+  function formatDateThai(ts?: number) {
     if (!ts) return '';
     const d = new Date(ts);
     const datePart = new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short' }).format(d);
     const timePart = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
     return `${datePart} ${timePart}`;
   }
-  
+
   return (
     <>
-      <main className="dashboard-page" aria-busy={balanceLoading || !historyData}>
+      <main className="dashboard-page" aria-busy={(!historyData || balance === null)}>
         <div className="dashboard-container">
           <header className="dashboard-header">
             <div className="brand">
@@ -197,7 +190,6 @@ export default function MainPage() {
 
             <div className="header-actions">
               <a href="/settings" className="icon-btn" aria-label="ตั้งค่า">
-                {/* gear icon */}
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
                   <path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7z" fill="currentColor" />
                   <path d="M19.4 13.5a7.95 7.95 0 0 0 .06-1 7.95 7.95 0 0 0-.06-1l2.11-1.65a.5.5 0 0 0 .12-.65l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a8.12 8.12 0 0 0-1.73-1L14.5 2.5a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 0-.5.5L9.21 5.02c-.62.2-1.21.47-1.73.8l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.65L4.6 11.5c-.05.33-.08.66-.08 1s.03.67.08 1L2.49 15.15a.5.5 0 0 0-.12.65l2 3.46c.14.24.44.34.7.22l2.49-1c.52.33 1.11.6 1.73.8L9 21.5a.5.5 0 0 0 .5.5h4c.26 0 .48-.16.5-.41l.29-2.3c.62-.2 1.21-.47 1.73-.8l2.49 1c.26.12.56.02.7-.22l2-3.46a.5.5 0 0 0-.12-.65L19.4 13.5z" fill="currentColor" opacity="0.9" />
@@ -211,11 +203,9 @@ export default function MainPage() {
               <div className="balance-block">
                 <div className="muted">ยอดคงเหลือ</div>
                 <div className="balance-value">
-                  {balanceLoading ? <div className="skeleton skeleton-balance" /> : <Balance value={balance ?? 0} />}
+                  {balance !== null ? <Balance value={balance} /> : <div className="skeleton skeleton-balance" />}
                 </div>
-                <div className="muted small">
-                  {balanceError ? balanceError : (sorted.length ? formatDateThai(sorted[0].time) : '—')}
-                </div>
+                <div className="muted small">อัปเดตล่าสุด: {sorted.length ? formatDateThai(sorted[0].time) : '—'}</div>
               </div>
 
               <div className="summary-grid">
@@ -279,7 +269,7 @@ export default function MainPage() {
               <div className="info-title">คำแนะนำ</div>
               <ul>
                 <li>ข้อมูลประวัติและการลบถูกจัดการจากฝั่งศูนย์กลาง (server)</li>
-                <li>ข้อมูลยอดคงเหลือจะถูกดึงจากฐานข้อมูลทุกครั้งที่เข้าเว็บไซต์ (ไม่มีการเก็บถาวรในเครื่อง)</li>
+                <li>หากต้องการเก็บประวัติระยะยาว โปรดสำรองข้อมูลภายนอก</li>
               </ul>
             </div>
           </section>
