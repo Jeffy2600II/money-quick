@@ -57,7 +57,7 @@ export default function MainPage() {
           return;
         }
 
-        // If localPin exists, do ONE background server verify, but don't block redirect path.
+        // If localPin exists, do ONE background server verify
         const check = await pinClient.checkPin(localPin);
         if (!check.ok || !check.data?.ok) {
           try { window.localStorage.removeItem('pin'); } catch {}
@@ -67,7 +67,7 @@ export default function MainPage() {
 
         // set session flag short-lived (fast future visits)
         try {
-          const SESSION_MS = 3 * 60 * 1000; // make short and tunable (3min)
+          const SESSION_MS = 3 * 60 * 1000; // 3 minutes
           safeSetJSON(SESSION_FLAG_KEY, { expires: Date.now() + SESSION_MS });
         } catch {}
 
@@ -76,7 +76,6 @@ export default function MainPage() {
         setAuthChecked(true);
       } catch (e) {
         console.error('fastAuth error', e);
-        // fallback: clear session locally and redirect to lock
         try { window.localStorage.removeItem('pin'); window.localStorage.removeItem(SESSION_FLAG_KEY); } catch {}
         router.replace('/lock');
       }
@@ -100,16 +99,16 @@ export default function MainPage() {
   const historyKey = '/api/history';
   const balanceKey = '/api/balance';
 
-  // Use SWR to fetch with dedupe/retry behavior configured in layout
+  // --- IMPORTANT: fix TypeScript overload error by not passing `undefined` as fetcher ---
+  // pass config as second arg; cast key to any to allow null (disabled) key
   const { data: historyData, error: historyError } = useSWR<Tx[]>(
-    authorized ? historyKey : null,
-    undefined,
-    { fallbackData: fallbackHistory, revalidateOnMount: true }
+    (authorized ? historyKey : null) as any,
+    { fallbackData: fallbackHistory ?? undefined, revalidateOnMount: true }
   );
+
   const { data: balanceData, error: balanceError } = useSWR<number>(
-    authorized ? balanceKey : null,
-    undefined,
-    { fallbackData: fallbackBalance, revalidateOnMount: true }
+    (authorized ? balanceKey : null) as any,
+    { fallbackData: fallbackBalance ?? undefined, revalidateOnMount: true }
   );
 
   // When SWR yields data, write to local cache (stabilize next visit)
@@ -126,7 +125,6 @@ export default function MainPage() {
     if (historyError || balanceError) {
       console.warn('SWR fetch error', { historyError, balanceError });
       setError('เกิดปัญหาในการดึงข้อมูล — ระบบจะพยายามโหลดใหม่เล็กน้อย');
-      // We rely on SWR retry/backoff; no immediate extra action here.
     } else {
       setError(null);
     }
