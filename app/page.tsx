@@ -3,58 +3,70 @@ import { useEffect, useState } from "react";
 import Balance from "../components/Balance";
 import PrefetchOnHover from "../components/PrefetchOnHover";
 
-type Tx = { type: string;amount: number;time: number };
+type Tx = { type: 'in' | 'out' | string; amount: number; time: number };
 
 export default function MainPage() {
   const [loading, setLoading] = useState(true);
-  const [balance, setBalance] = useState < number | null > (null);
-  const [recent, setRecent] = useState < Tx | null > (null);
-  const [error, setError] = useState < string | null > (null);
-  
+  const [balance, setBalance] = useState<number | null>(null);
+  const [history, setHistory] = useState<Tx[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     let mounted = true;
     async function load() {
       try {
-        // Load balance
-        const bRes = await fetch("/api/balance");
+        setLoading(true);
+        const [bRes, hRes] = await Promise.all([
+          fetch("/api/balance"),
+          fetch("/api/history"),
+        ]);
+
+        if (!mounted) return;
+
+        if (!bRes.ok) throw new Error('Failed to load balance');
+        if (!hRes.ok) throw new Error('Failed to load history');
+
         const bJson = await bRes.json();
-        if (!mounted) return;
-        setBalance(Number(bJson.balance ?? 0));
-        
-        // Load history (limited client-side; endpoint returns many — we take first)
-        const hRes = await fetch("/api/history");
         const hJson = await hRes.json();
-        if (!mounted) return;
-        // history items are expected sorted by time desc in server (listTx sorts by key)
-        const first: Tx | undefined = Array.isArray(hJson) && hJson.length ? hJson[0] : undefined;
-        setRecent(first ?? null);
+
+        setBalance(Number(bJson.balance ?? 0));
+        setHistory(Array.isArray(hJson) ? (hJson as Tx[]) : []);
       } catch (e) {
-        if (!mounted) return;
         setError("เกิดข้อผิดพลาดในการโหลดข้อมูล");
       } finally {
-        if (!mounted) return;
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     }
     load();
     return () => { mounted = false; };
   }, []);
-  
+
+  // compute summary (from fetched history)
+  const recent = history.slice(0, 3);
+  const totals = history.reduce(
+    (acc, tx) => {
+      if (tx.type === "in") acc.in += Number(tx.amount || 0);
+      else acc.out += Number(tx.amount || 0);
+      return acc;
+    },
+    { in: 0, out: 0 }
+  );
+
   function formatCurrency(n: number | null) {
     if (n === null) return "—";
     return `฿ ${n.toLocaleString()}`;
   }
-  
-  function formatTime(ts ? : number) {
+
+  function formatTime(ts?: number) {
     if (!ts) return "";
     const d = new Date(ts);
-    return d.toLocaleString(undefined, { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
-  
+
   return (
-    <main className="min-h-screen flex flex-col items-center bg-base px-3">
-      <div style={{ width: "100%", maxWidth: 460 }}>
-        {/* Header / Brand — reuse logo styles for consistent design */}
+    <main className="min-h-screen flex flex-col items-center bg-base px-4">
+      <div style={{ width: "100%", maxWidth: 640 }}>
+        {/* Brand / header */}
         <div className="pin-top" />
         <div className="pin-brand" style={{ marginBottom: 6 }}>
           <div className="logo" aria-hidden>
@@ -66,24 +78,46 @@ export default function MainPage() {
           </div>
         </div>
 
-        {/* Card: Balance + actions */}
-        <section className="bg-white rounded-lg p-4" style={{ border: "1px solid rgba(15,23,42,0.06)" }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <div style={{ color: "#6b7280", fontWeight: 600 }}>ยอดคงเหลือ</div>
+        {/* Balance card */}
+        <section
+          aria-labelledby="balance-heading"
+          style={{
+            background: "#fff",
+            borderRadius: 12,
+            padding: 16,
+            boxSizing: "border-box",
+            border: "1px solid rgba(15,23,42,0.06)",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <div id="balance-heading" style={{ color: "#6b7280", fontWeight: 600 }}>ยอดคงเหลือ</div>
               <div style={{ marginTop: 8 }}>
-                {loading ? <div style={{ height: 44, width: 220, background: "rgba(0,0,0,0.04)", borderRadius: 6 }} /> : <Balance value={balance ?? 0} />}
+                {loading ? (
+                  <div style={{ height: 60, width: 260, background: "rgba(0,0,0,0.04)", borderRadius: 8 }} />
+                ) : (
+                  <Balance value={balance ?? 0} />
+                )}
+              </div>
+              <div style={{ color: "#6b7280", fontSize: 13, marginTop: 6 }}>
+                อัปเดตล่าสุด: {history.length ? formatTime(history[0].time) : "—"}
               </div>
             </div>
 
-            <div style={{ textAlign: "right" }}>
-              <div style={{ color: "#6b7280", fontWeight: 600 }}>สถานะ</div>
-              <div style={{ marginTop: 8, fontWeight: 700, color: balance !== null && balance >= 0 ? "#04996f" : "#ef4444" }}>
-                {loading ? "กำลังโหลด..." : balance !== null ? (balance >= 0 ? "ปกติ" : "ติดลบ") : "—"}
+            {/* Summary compact */}
+            <div style={{ minWidth: 160, display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ background: "rgba(4,153,111,0.06)", borderRadius: 10, padding: "10px 12px" }}>
+                <div style={{ fontSize: 12, color: "#6b7280" }}>รวมรายรับ</div>
+                <div style={{ fontWeight: 700, color: "#059669", marginTop: 6 }}>{formatCurrency(totals.in)}</div>
+              </div>
+              <div style={{ background: "rgba(239,68,68,0.06)", borderRadius: 10, padding: "10px 12px" }}>
+                <div style={{ fontSize: 12, color: "#6b7280" }}>รวมรายจ่าย</div>
+                <div style={{ fontWeight: 700, color: "#dc2626", marginTop: 6 }}>{formatCurrency(totals.out)}</div>
               </div>
             </div>
           </div>
 
+          {/* Actions */}
           <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
             <PrefetchOnHover href="/history">
               <a className="confirm-button" style={{ background: "var(--accent)", color: "#fff", textDecoration: "none" }}>ดูประวัติทั้งหมด</a>
@@ -102,36 +136,49 @@ export default function MainPage() {
         {/* Recent activity preview */}
         <section style={{ marginTop: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-            <h2 style={{ fontWeight: 700, fontSize: "1.05rem" }}>ประวัติล่าสุด</h2>
+            <h2 style={{ fontWeight: 700, fontSize: "1.05rem" }}>กิจกรรมล่าสุด</h2>
             <a href="/history" style={{ color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>ดูทั้งหมด</a>
           </div>
 
-          <div style={{ background: "#fff", border: "1px solid rgba(15,23,42,0.06)", borderRadius: 10, overflow: "hidden" }}>
+          <div style={{ background: "#fff", border: "1px solid rgba(15,23,42,0.06)", borderRadius: 12, overflow: "hidden" }}>
             {loading ? (
-              <div style={{ padding: 14 }}>
-                <div style={{ height: 42, background: "rgba(0,0,0,0.04)", borderRadius: 8, width: "100%" }} />
+              <div style={{ padding: 12 }}>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} style={{ display: "flex", gap: 12, alignItems: "center", padding: "10px 0", borderBottom: i < 2 ? "1px solid rgba(15,23,42,0.03)" : "none" }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(0,0,0,0.04)" }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ height: 12, background: "rgba(0,0,0,0.04)", width: "60%", borderRadius: 6 }} />
+                      <div style={{ height: 10, background: "rgba(0,0,0,0.03)", width: "30%", borderRadius: 6, marginTop: 8 }} />
+                    </div>
+                    <div style={{ width: 90, height: 14, background: "rgba(0,0,0,0.04)", borderRadius: 6 }} />
+                  </div>
+                ))}
               </div>
-            ) : recent ? (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 10,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    background: recent.type === "in" ? "rgba(4,153,111,0.08)" : "rgba(239,68,68,0.08)",
-                    color: recent.type === "in" ? "var(--accent-strong)" : "var(--error)",
-                    fontWeight: 700
-                  }}>
-                    {recent.type === "in" ? "+" : "−"}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 700 }}>{recent.type === "in" ? "เงินเข้า" : "เงินออก"}</div>
-                    <div style={{ color: "#6b7280", fontSize: 13 }}>{formatTime(recent.time)}</div>
-                  </div>
-                </div>
+            ) : recent.length ? (
+              <div>
+                {recent.map((tx, idx) => (
+                  <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 12, borderBottom: idx < recent.length - 1 ? "1px solid rgba(15,23,42,0.03)" : "none" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{
+                        width: 44, height: 44, borderRadius: 10,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        background: tx.type === "in" ? "rgba(4,153,111,0.08)" : "rgba(239,68,68,0.08)",
+                        color: tx.type === "in" ? "var(--accent-strong)" : "var(--error)",
+                        fontWeight: 700
+                      }}>
+                        {tx.type === "in" ? "+" : "−"}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700 }}>{tx.type === "in" ? "เงินเข้า" : "เงินออก"}</div>
+                        <div style={{ color: "#6b7280", fontSize: 13 }}>{formatTime(tx.time)}</div>
+                      </div>
+                    </div>
 
-                <div style={{ fontWeight: 800, fontSize: "1rem", color: recent.type === "in" ? "#059669" : "#dc2626" }}>
-                  {recent.type === "in" ? "+" : "-"} ฿ {recent.amount.toLocaleString()}
-                </div>
+                    <div style={{ fontWeight: 800, fontSize: "1rem", color: tx.type === "in" ? "#059669" : "#dc2626" }}>
+                      {tx.type === "in" ? "+" : "-"} ฿ {tx.amount.toLocaleString()}
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div style={{ padding: 14, color: "#6b7280" }}>ยังไม่มีรายการ</div>
@@ -139,21 +186,45 @@ export default function MainPage() {
           </div>
         </section>
 
-        {/* Quick info / notes */}
+        {/* Info / notes */}
         <section style={{ marginTop: 18 }}>
           <div style={{ background: "#fff", border: "1px solid rgba(15,23,42,0.06)", borderRadius: 10, padding: 12, color: "#6b7280" }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>ข้อมูลเพิ่มเติม</div>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>คำแนะนำ</div>
             <ul style={{ paddingLeft: 18 }}>
-              <li>หน้านี้เป็นแดชบอร์ดแสดงข้อมูลเท่านั้น หากต้องการแก้ไขยอดหรือรายการโปรดไปที่หน้าที่เกี่ยวข้อง</li>
-              <li>การตั้งค่า PIN และการรีเซ็ตต้องทำจากหน้าตั้งค่าหรือเปลี่ยน PIN</li>
-              <li>หากต้องการดูประวัติทั้งหมดกด "ดูทั้งหมด"</li>
+              <li>หน้านี้เป็นแดชบอร์ดสำหรับดูข้อมูลหลัก — หากต้องการแก้ไขหรือบันทึกรายการ ให้ไปที่หน้าจัดการ (ปุ่มลอยด้านล่าง)</li>
+              <li>ปุ่มตั้งค่า/เปลี่ยน PIN นำไปยังหน้าที่เกี่ยวข้องสำหรับการจัดการรหัส</li>
+              <li>ออกแบบสอดคล้องกับ UI ของหน้าล็อก (สี ตัวหนา ขนาด จุด PIN) เพื่อความต่อเนื่องของแบรนด์</li>
             </ul>
           </div>
         </section>
 
         {error && <div style={{ color: "var(--error)", marginTop: 12 }}>{error}</div>}
-
       </div>
+
+      {/* Floating action button (ไปยังหน้าจัดการ รายรับ/รายจ่าย) */}
+      <a
+        href="/manage"
+        aria-label="จัดการรายรับรายจ่าย"
+        style={{
+          position: "fixed",
+          right: 18,
+          bottom: 20,
+          width: 64,
+          height: 64,
+          borderRadius: 9999,
+          background: "var(--accent)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#fff",
+          fontSize: 22,
+          fontWeight: 800,
+          textDecoration: "none",
+          boxShadow: "0 8px 18px rgba(0,0,0,0.08)"
+        }}
+      >
+        +
+      </a>
     </main>
   );
 }
