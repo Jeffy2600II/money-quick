@@ -105,15 +105,14 @@ export default function MainPage() {
   const balanceKey = '/api/balance';
 
   // SWR calls — rely on SWRConfig.fetcher (set in layout)
+  // NOTE: do NOT pass `undefined` as the second argument — pass options as the 2nd param when you want to use global fetcher.
   const { data: historyData, error: historyError, isValidating: isHistoryValidating } = useSWR<Tx[]>(
     (authorized ? historyKey : null) as any,
-    undefined,
     { fallbackData: (fallbackHistory ?? undefined) as any, revalidateOnMount: true }
   );
 
   const { data: rawBalanceData, error: balanceError, isValidating: isBalanceValidating } = useSWR<any>(
     (authorized ? balanceKey : null) as any,
-    undefined,
     { fallbackData: (fallbackBalance ?? undefined) as any, revalidateOnMount: true }
   );
 
