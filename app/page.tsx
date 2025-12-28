@@ -103,6 +103,29 @@ export default function MainPage() {
     }
   }
   
+  // Helper: get Thai month short name for given date (e.g., "ธ.ค.")
+  function thaiMonthNameShort(date = new Date()) {
+    try {
+      return new Intl.DateTimeFormat('th-TH', { month: 'short' }).format(date);
+    } catch {
+      const m = date.getMonth();
+      const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+      return months[m] ?? '';
+    }
+  }
+  
+  // Compute totals for current month (filter by month+year)
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const itemsThisMonth = items.filter(tx => {
+    const d = new Date(tx.time);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  });
+  const inTotalThisMonth = itemsThisMonth.filter(t => t.type === 'in').reduce((s, t) => s + (t.amount || 0), 0);
+  const outTotalThisMonth = itemsThisMonth.filter(t => t.type === 'out').reduce((s, t) => s + (t.amount || 0), 0);
+  const monthNameThai = thaiMonthNameShort(now);
+  
   return (
     <main className="dashboard-page">
       <div className="dashboard-vertical">
@@ -124,13 +147,13 @@ export default function MainPage() {
         {/* Summary row */}
         <div className="dashboard-summary-row" role="region" aria-label="สรุปรายรับรายจ่าย">
           <div className="dashboard-summary in" aria-hidden>
-            + รายรับ
-            <div className="summary-value">฿ {items.filter(t => t.type === 'in').reduce((s, t) => s + t.amount, 0).toLocaleString()}</div>
+            รายรับ ({monthNameThai})
+            <div className="summary-value">฿ {inTotalThisMonth.toLocaleString()}</div>
           </div>
 
           <div className="dashboard-summary out" aria-hidden>
-            − รายจ่าย
-            <div className="summary-value">฿ {items.filter(t => t.type === 'out').reduce((s, t) => s + t.amount, 0).toLocaleString()}</div>
+            รายจ่าย ({monthNameThai})
+            <div className="summary-value">฿ {outTotalThisMonth.toLocaleString()}</div>
           </div>
         </div>
 
