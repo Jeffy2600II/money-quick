@@ -2,9 +2,9 @@
 import PrefetchOnHover from "../../components/PrefetchOnHover";
 
 /**
- * Settings page (current minimal):
- * - Per your note: do NOT place "change PIN" here as the regular change flow is for users who know their PIN.
- * - This page exposes a single action for now: "รีเซ็ตรหัสผ่าน (ลืมรหัสผ่าน)" which routes to the setup/reset flow.
+ * Settings page (updated)
+ * - Provides "เปลี่ยนรหัสผ่าน" action (for users who know their existing PIN).
+ * - Removed "รีเซ็ตรหัสผ่าน (ลืมรหัสผ่าน)" option from this page per request.
  */
 
 export default function SettingsPage() {
@@ -21,14 +21,14 @@ export default function SettingsPage() {
         </div>
 
         <section style={{ background: "#fff", border: "1px solid rgba(15,23,42,0.06)", borderRadius: 12, padding: 16 }}>
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>ตัวเลือกปัจจุบัน</div>
+          <div style={{ fontWeight: 700, marginBottom: 8 }}>ตัวเลือกการตั้งค่า</div>
           <p style={{ color: "#6b7280", marginBottom: 12 }}>
-            ปัจจุบันหน้านี้มีตัวเลือกเดียว คือการรีเซ็ตรหัสผ่าน (ลืมรหัสผ่าน) — หากคุณลืม PIN ให้ใช้ตัวเลือกนี้เพื่อตั้ง PIN ใหม่
+            หน้านี้มีตัวเลือกสำหรับการจัดการค่าที่เกี่ยวข้องกับบัญชีของคุณ
           </p>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <PrefetchOnHover href="/setup-pin?force=1">
-              <a className="confirm-button" style={{ background: "#f97316", color: "#fff", textDecoration: "none" }}>รีเซ็ตรหัสผ่าน (ลืมรหัสผ่าน)</a>
+            <PrefetchOnHover href="/change-pin">
+              <a className="confirm-button" style={{ background: "#0ea5a0", color: "#fff", textDecoration: "none" }}>เปลี่ยนรหัสผ่าน (เปลี่ยน PIN)</a>
             </PrefetchOnHover>
 
             <PrefetchOnHover href="/">

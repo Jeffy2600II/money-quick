@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useState } from "react";
 import Balance from "../components/Balance";
-import PrefetchOnHover from "../components/PrefetchOnHover";
 
 type Tx = { type: 'in' | 'out' | string; amount: number; time: number };
 
@@ -76,15 +75,7 @@ export default function MainPage() {
           <div className="pin-prompt" style={{ marginTop: 8, marginBottom: 6 }}>
             ภาพรวมบัญชี
           </div>
-
-          {/* Settings icon (top-right of header area) */}
-          <a href="/settings" aria-label="ตั้งค่า" className="header-settings">
-            {/* Gear icon (SVG embedded) */}
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7z" fill="currentColor" />
-              <path d="M19.4 13.5a7.95 7.95 0 0 0 .06-1 7.95 7.95 0 0 0-.06-1l2.11-1.65a.5.5 0 0 0 .12-.65l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a8.12 8.12 0 0 0-1.73-1L14.5 2.5a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 0-.5.5L9.21 5.02c-.62.2-1.21.47-1.73.8l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.65L4.6 11.5c-.05.33-.08.66-.08 1s.03.67.08 1L2.49 15.15a.5.5 0 0 0-.12.65l2 3.46c.14.24.44.34.7.22l2.49-1c.52.33 1.11.6 1.73.8L9 21.5a.5.5 0 0 0 .5.5h4c.26 0 .48-.16.5-.41l.29-2.3c.62-.2 1.21-.47 1.73-.8l2.49 1c.26.12.56.02.7-.22l2-3.46a.5.5 0 0 0-.12-.65L19.4 13.5z" fill="currentColor" opacity="0.9" />
-            </svg>
-          </a>
+          {/* Settings icon intentionally not shown here (moved to header in prior step) */}
         </div>
 
         {/* Balance card */}
@@ -126,27 +117,14 @@ export default function MainPage() {
             </div>
           </div>
 
-          {/* Actions */}
-          <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
-            <PrefetchOnHover href="/history">
-              <a className="confirm-button" style={{ background: "var(--accent)", color: "#fff", textDecoration: "none" }}>ดูประวัติทั้งหมด</a>
-            </PrefetchOnHover>
-
-            <PrefetchOnHover href="/change-pin">
-              <a className="confirm-button" style={{ background: "#0ea5a0", color: "#fff", textDecoration: "none", maxWidth: 180 }}>เปลี่ยน PIN</a>
-            </PrefetchOnHover>
-
-            <PrefetchOnHover href="/setup-pin">
-              <a className="confirm-button" style={{ background: "#60a5fa", color: "#fff", textDecoration: "none", maxWidth: 180 }}>ตั้งค่า PIN</a>
-            </PrefetchOnHover>
-          </div>
+          {/* NOTE: action buttons removed from main page as requested */}
         </section>
 
-        {/* Recent activity preview */}
+        {/* Recent activity preview (no "ดูทั้งหมด" link) */}
         <section style={{ marginTop: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
             <h2 style={{ fontWeight: 700, fontSize: "1.05rem" }}>กิจกรรมล่าสุด</h2>
-            <a href="/history" style={{ color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>ดูทั้งหมด</a>
+            {/* removed "ดูทั้งหมด" link; history accessible from bottom nav */}
           </div>
 
           <div style={{ background: "#fff", border: "1px solid rgba(15,23,42,0.06)", borderRadius: 12, overflow: "hidden" }}>
@@ -201,8 +179,7 @@ export default function MainPage() {
             <div style={{ fontWeight: 700, marginBottom: 8 }}>คำแนะนำ</div>
             <ul style={{ paddingLeft: 18 }}>
               <li>หน้านี้เป็นแดชบอร์ดสำหรับดูข้อมูลหลัก — หากต้องการแก้ไขหรือบันทึกรายการ ให้ไปที่หน้าจัดการ (ปุ่มล่างกลาง)</li>
-              <li>ปุ่มตั้งค่า/เปลี่ยน PIN นำไปยังหน้าที่เกี่ยวข้องสำหรับการจัดการรหัส</li>
-              <li>ออกแบบสอดคล้องกับ UI ของหน้าล็อก (สี ตัวหนา ขนาด จุด PIN) เพื่อความต่อเนื่องของแบรนด์</li>
+              <li>การตั้งค่า PIN และการเปลี่ยน PIN ย้ายไปอยู่ในหน้า ตั้งค่า (Settings)</li>
             </ul>
           </div>
         </section>
