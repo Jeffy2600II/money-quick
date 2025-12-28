@@ -2,7 +2,7 @@
 
 import React from 'react';
 import ManagerForm from '../../components/ManagerForm';
-import '../styles/manager.css';
+import '../../styles/manager.css';
 
 export default function ManagePage() {
   return (
