@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import Balance from "../components/Balance";
 import BottomNav from "../components/BottomNav";
+import { useLoader } from "../components/LoaderProvider";
 import '../styles/dashboard.css';
 import * as pinClient from "../lib/pinClient";
 
@@ -31,6 +32,8 @@ function safeSetJSON<T>(key: string, data: T) {
 
 export default function MainPage() {
   const router = useRouter();
+  const loader = useLoader();
+
   const [authChecked, setAuthChecked] = useState(false);
   const [authorized, setAuthorized] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,39 +103,49 @@ export default function MainPage() {
   const balanceKey = '/api/balance';
 
   // useSWR calls (cast key to any to allow null when disabled)
-  const { data: historyData, error: historyError } = useSWR<Tx[]>(
+  const { data: historyData, error: historyError, isValidating: isHistoryValidating } = useSWR<Tx[]>(
     (authorized ? historyKey : null) as any,
     { fallbackData: (fallbackHistory ?? undefined) as any, revalidateOnMount: true }
   );
 
-  const { data: rawBalanceData, error: balanceError } = useSWR<any>(
+  const { data: rawBalanceData, error: balanceError, isValidating: isBalanceValidating } = useSWR<any>(
     (authorized ? balanceKey : null) as any,
     { fallbackData: (fallbackBalance ?? undefined) as any, revalidateOnMount: true }
   );
 
+  // Show central loader while SWR is fetching data (or when no data yet)
+  useEffect(() => {
+    if (!authorized) return;
+    const loading =
+      Boolean(isHistoryValidating) ||
+      Boolean(isBalanceValidating) ||
+      (!historyData && typeof rawBalanceData === 'undefined');
+    if (loading) {
+      loader.show('กำลังโหลดข้อมูล...');
+    } else {
+      loader.hide();
+    }
+    // ensure loader hidden on cleanup
+    return () => { loader.hide(true); };
+  }, [authorized, isHistoryValidating, isBalanceValidating, historyData, rawBalanceData, loader]);
+
   // Normalize balance value:
-  // - Some API implementations return { balance: number }
-  // - Some return plain number
-  // Ensure we extract a numeric value if present.
   const balance: number | null = (() => {
     if (typeof rawBalanceData === 'number') return rawBalanceData;
     if (rawBalanceData && typeof rawBalanceData === 'object') {
       if ('balance' in rawBalanceData && typeof rawBalanceData.balance === 'number') return rawBalanceData.balance;
-      // sometimes API returns { data: { balance: ... } }
       if ('data' in rawBalanceData && rawBalanceData.data && typeof rawBalanceData.data.balance === 'number') return rawBalanceData.data.balance;
     }
-    // fallback: try cached fallbackBalance if it's a number
     if (typeof fallbackBalance === 'number') return fallbackBalance;
     if (fallbackBalance && typeof fallbackBalance === 'object' && 'balance' in fallbackBalance && typeof (fallbackBalance as any).balance === 'number') {
       return (fallbackBalance as any).balance;
     }
-    // otherwise null
     return null;
   })();
 
-  // When SWR yields history data, write to local cache (stabilize next visit)
+  // cache SWR results locally
   useEffect(() => {
-    if (historyData) safeSetJSON(HISTORY_CACHE_KEY, historyData.slice(0, 200)); // cap size
+    if (historyData) safeSetJSON(HISTORY_CACHE_KEY, historyData.slice(0, 200));
   }, [historyData]);
 
   useEffect(() => {
