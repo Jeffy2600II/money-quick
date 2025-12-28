@@ -73,11 +73,33 @@ export default function MainPage() {
     return `฿ ${n.toLocaleString()}`;
   }
   
-  function formatTime(ts: number) {
+  // Format date: Thai locale, day + month only (no year)
+  function formatDateThai(ts: number) {
     try {
-      return new Date(ts).toLocaleTimeString();
+      const d = new Date(ts);
+      // day numeric + short month in Thai (e.g., "28 ธ.ค.")
+      return new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short' }).format(d);
     } catch {
-      return '-';
+      return new Date(ts).toLocaleDateString();
+    }
+  }
+  
+  // Format time: HH:MM (no seconds) and append Thai "น."
+  function formatTimeThai(ts: number) {
+    try {
+      const d = new Date(ts);
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      return `${hh}:${mm} น.`;
+    } catch {
+      try {
+        const s = new Date(ts).toLocaleTimeString();
+        // fallback: remove seconds if possible and append น.
+        const parts = s.split(':').slice(0, 2).join(':');
+        return `${parts} น.`;
+      } catch {
+        return '-';
+      }
     }
   }
   
@@ -131,7 +153,7 @@ export default function MainPage() {
                 </div>
                 <div className="dashboard-recent-meta">
                   <div className="recent-title">{tx.type === 'in' ? 'รายรับ' : 'รายจ่าย'}</div>
-                  <div className="muted small">{new Date(tx.time).toLocaleDateString()} • {formatTime(tx.time)}</div>
+                  <div className="muted small">{formatDateThai(tx.time)} • {formatTimeThai(tx.time)}</div>
                 </div>
                 <div className="dashboard-recent-amount">{formatCurrency(tx.amount)}</div>
               </div>
