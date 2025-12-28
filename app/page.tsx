@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from "react";
+import '../styles/dashboard.css'; // <-- added import for dashboard styles
 import Balance from "../components/Balance";
 import ToggleInOut from "../components/ToggleInOut";
 import BottomNav from "../components/BottomNav";
@@ -102,7 +103,6 @@ export default function MainPage() {
       
       if (!pin) {
         // Ask user (simple prompt — keeps behaviour lightweight and consistent)
-        // In production we might show a dedicated lock screen
         const p = window.prompt('กรุณากรอกรหัส PIN เพื่อยืนยันการทำรายการ');
         if (!p) {
           popup.show('ยกเลิกการทำรายการ', { duration: 1800 });
