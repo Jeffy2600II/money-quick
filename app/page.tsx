@@ -10,30 +10,13 @@ import '../styles/dashboard.css';
 type Tx = { type: 'in' | 'out' | string; amount: number; time: number };
 
 /**
- * Dashboard page
- *
- * Security-first behavior (fastest possible):
- * - On mount perform immediate synchronous check of local session PIN.
- *   - If no session PIN: quickly query server whether a PIN exists.
- *     - If server reports no PIN -> redirect to /setup-pin
- *     - If server reports PIN exists -> redirect to /lock
- *   - If session PIN exists: verify it with server immediately.
- *     - If invalid -> clear session and redirect to /lock
- *     - If valid -> mark authorized and start loading dashboard data in background
- *
- * Implementation notes:
- * - We deliberately avoid rendering the dashboard UI until authorization completes.
- *   This keeps the UX fast: user is redirected immediately if not authorized,
- *   or sees the dashboard only after successful auth.
- * - All PIN checks are done via pinClient (which sends POST in body).
- * - Data loading (balance/history) starts only after successful PIN verification,
- *   but we don't add artificial delays.
+ * Dashboard page with fast auth + visible auth loader.
  */
-
 export default function MainPage() {
   const router = useRouter();
   const loader = useLoader();
 
+  const [authPending, setAuthPending] = useState(true); // true until authorization completes (success or redirect)
   const [authorized, setAuthorized] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [balance, setBalance] = useState<number | null>(null);
@@ -45,20 +28,18 @@ export default function MainPage() {
 
     async function fastAuthAndLoad() {
       try {
-        // 1) Check local session PIN synchronously
+        // show central loader immediately for consistent UX
+        loader.show('กำลังตรวจสอบสิทธิ์...');
+        // 1) quick check local session PIN
         let localPin: string | null = null;
-        try {
-          localPin = window.localStorage.getItem('pin');
-        } catch {
-          localPin = null;
-        }
+        try { localPin = window.localStorage.getItem('pin'); } catch { localPin = null; }
 
         if (!localPin) {
-          // No session PIN -> ask server whether a PIN is set at all.
-          // If server fails, treat conservatively and send to /lock (or /setup-pin)
+          // Ask server whether a PIN exists
           const has = await pinClient.hasPin();
+          loader.hide();
           if (!has.ok) {
-            // If server error, route to lock so user can re-authenticate
+            // server error -> go to lock to force auth
             router.replace('/lock');
             return;
           }
@@ -66,33 +47,34 @@ export default function MainPage() {
             router.replace('/setup-pin');
             return;
           }
-          // PIN exists but no local session -> go to lock
           router.replace('/lock');
           return;
         }
 
-        // 2) We have a localPin -> verify it immediately with server
+        // 2) verify localPin with server immediately
         const check = await pinClient.checkPin(localPin);
         if (!check.ok || !check.data?.ok) {
-          // invalid session pin -> clear and force lock
           try { window.localStorage.removeItem('pin'); } catch {}
+          loader.hide();
           router.replace('/lock');
           return;
         }
 
-        // authorized: show dashboard and load data
+        // authorized
         if (!mounted) return;
         setAuthorized(true);
+        setAuthPending(false);
 
-        // Load data as soon as authorized (do not block UI longer than necessary)
+        // load dashboard data
         setLoadingData(true);
         loader.show('กำลังโหลดข้อมูล...');
         try {
           const [bRes, hRes] = await Promise.all([fetch("/api/balance"), fetch("/api/history")]);
           if (!mounted) return;
 
-          if (!bRes.ok) throw new Error('Failed to load balance');
-          if (!hRes.ok) throw new Error('Failed to load history');
+          if (!bRes.ok || !hRes.ok) {
+            throw new Error('Failed to load data');
+          }
 
           const bJson = await bRes.json();
           const hJson = await hRes.json();
@@ -107,31 +89,64 @@ export default function MainPage() {
         }
       } catch (e) {
         console.error('Auth/load error:', e);
-        // On unexpected error, clear session and go to lock to avoid stuck state
         try { window.localStorage.removeItem('pin'); } catch {}
-        // Minimal feedback then redirect
-        setError("เกิดข้อผิดพลาด ตรวจสอบสิทธิ์ล้มเหลว");
+        setError('เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์');
+        loader.hide();
+        // routing to lock as safe default
         router.replace('/lock');
+      } finally {
+        if (mounted) {
+          setAuthPending(false);
+        }
       }
     }
 
-    // Run immediately (no artificial delay)
+    // Run immediately
     void fastAuthAndLoad();
 
     return () => {
       mounted = false;
-      // ensure loader hidden when unmount
       loader.hide(true);
     };
-    // We intentionally leave router and loader out of deps to run this only on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // If not authorized yet, render nothing (fast redirect will happen).
-  // This avoids flashing the dashboard to an unauthenticated user.
+  // While auth pending, show a lightweight auth loader UI (so user doesn't see blank screen)
+  if (authPending) {
+    return (
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#ffffff',
+        zIndex: 20000,
+      }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+          alignItems: 'center',
+          padding: 18,
+          borderRadius: 12,
+          boxShadow: '0 10px 30px rgba(2,6,23,0.06)',
+          border: '1px solid rgba(15,23,42,0.06)',
+          background: '#fff'
+        }}>
+          <div style={{ fontWeight: 800, fontSize: 20 }}>Moneyquick</div>
+          <div style={{ width: 48, height: 48, borderRadius: 9999, border: '4px solid rgba(0,0,0,0.08)', borderTopColor: 'var(--accent, #00c48a)', animation: 'spin 900ms linear infinite' }} />
+          <div style={{ color: 'var(--neutral-500, #6b7280)', fontWeight: 700 }}>กำลังตรวจสอบสิทธิ์...</div>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
+  }
+
+  // If not authorized we already redirected; render nothing as fallback
   if (!authorized) return null;
 
-  // Authorized: render dashboard. loadingData indicates background fetch state.
+  // Authorized: render dashboard normally
   const sorted = [...history].sort((a, b) => (b.time || 0) - (a.time || 0));
   const recent = sorted.slice(0, 3);
   const totals = history.reduce(
