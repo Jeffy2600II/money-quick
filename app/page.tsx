@@ -1,257 +1,299 @@
 'use client';
 
-import React, { useEffect, useState } from "react";
-import '../styles/dashboard.css'; // dashboard styles
+import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import useSWR from "swr";
+import '../styles/dashboard.css'; // dashboard styles (kept)
 import Balance from "../components/Balance";
-import ToggleInOut from "../components/ToggleInOut";
 import BottomNav from "../components/BottomNav";
 import PrefetchOnHover from "../components/PrefetchOnHover";
 import { useLoader } from "../components/LoaderProvider";
-import { usePopup } from "../components/PopupProvider";
 import * as pinClient from "../lib/pinClient";
-import useSWR, { mutate } from "swr";
 
-type Tx = { type: 'in' | 'out' | string;amount: number;time: number };
+type Tx = { type: 'in' | 'out' | string; amount: number; time: number };
+
+const SESSION_FLAG_KEY = 'session_valid_v1';
+const HISTORY_CACHE_KEY = 'history_cache_v1';
+const BALANCE_CACHE_KEY = 'balance_cache_v1';
+
+// Safe localStorage helpers
+function safeGetJSON<T>(key: string): T | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+function safeSetJSON<T>(key: string, data: T) {
+  try {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(key, JSON.stringify(data));
+  } catch {}
+}
+function safeRemove(key: string) {
+  try {
+    if (typeof window === 'undefined') return;
+    window.localStorage.removeItem(key);
+  } catch {}
+}
 
 export default function MainPage() {
+  const router = useRouter();
   const loader = useLoader();
-  const popup = usePopup();
-  
-  // SWR will use the global fetcher (fetchWithTimeout) configured in layout
-  const { data: balanceData, error: balanceError } = useSWR < { balance: number } > ("/api/balance");
-  const { data: historyData, error: historyError } = useSWR < Tx[] > ("/api/history");
-  
-  const [mode, setMode] = useState < 'in' | 'out' > ('in');
-  const [amount, setAmount] = useState < number | '' > ('');
-  const [saving, setSaving] = useState(false);
-  const [unlocked, setUnlocked] = useState(false);
-  
-  // fastAuth: try local PIN in localStorage to unlock quickly (keeps pin functions)
+
+  const [authChecked, setAuthChecked] = useState(false);
+  const [authorized, setAuthorized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fast local session check (instant UX)
   useEffect(() => {
+    let mounted = true;
     (async function fastAuth() {
       try {
-        const stored = typeof window !== "undefined" ? localStorage.getItem("pin") : null;
-        if (stored) {
-          const res = await pinClient.checkPin(stored);
-          if (res.ok && res.data?.ok) {
-            setUnlocked(true);
-          } else {
-            setUnlocked(false);
-          }
+        // 1) session flag short-lived to avoid repeated server checks
+        const raw = safeGetJSON<{ expires: number }>(SESSION_FLAG_KEY);
+        if (raw && raw.expires && Date.now() < raw.expires) {
+          if (!mounted) return;
+          setAuthorized(true);
+          setAuthChecked(true);
+          return;
         }
-      } catch {
-        setUnlocked(false);
+
+        // 2) fallback to local pin presence (fast), then one server verify
+        let localPin: string | null = null;
+        try { localPin = window.localStorage.getItem('pin'); } catch { localPin = null; }
+
+        if (!localPin) {
+          // no local pin -> redirect to lock immediately
+          router.replace('/lock');
+          return;
+        }
+
+        // Verify once in background
+        const check = await pinClient.checkPin(localPin);
+        if (!check.ok || !check.data?.ok) {
+          try { window.localStorage.removeItem('pin'); safeRemove(SESSION_FLAG_KEY); } catch {}
+          router.replace('/lock');
+          return;
+        }
+
+        // mark session short-lived to speed up subsequent navigations
+        try {
+          const SESSION_MS = 3 * 60 * 1000; // 3 minutes
+          safeSetJSON(SESSION_FLAG_KEY, { expires: Date.now() + SESSION_MS });
+        } catch {}
+
+        if (!mounted) return;
+        setAuthorized(true);
+        setAuthChecked(true);
+      } catch (e) {
+        console.error('fastAuth error', e);
+        try { safeRemove('pin'); safeRemove(SESSION_FLAG_KEY); } catch {}
+        router.replace('/lock');
       }
     })();
+    return () => { mounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  
-  const balance = balanceData?.balance ?? null;
-  const items = Array.isArray(historyData) ? historyData : [];
-  
+
+  // Provide immediate UI from local caches for snappy UX
+  const fallbackHistory = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    return safeGetJSON<Tx[]>(HISTORY_CACHE_KEY);
+  }, []);
+
+  const fallbackBalance = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    return safeGetJSON<number | { balance?: number }>(BALANCE_CACHE_KEY);
+  }, []);
+
+  const historyKey = '/api/history';
+  const balanceKey = '/api/balance';
+
+  // Use SWR (global fetcher is configured in layout -> lib/fetcher.fetchWithTimeout)
+  const { data: historyData, error: historyError, isValidating: isHistoryValidating } = useSWR<Tx[]>(
+    (authorized ? historyKey : null) as any,
+    { fallbackData: (fallbackHistory ?? undefined) as any, revalidateOnMount: true }
+  );
+
+  const { data: rawBalanceData, error: balanceError, isValidating: isBalanceValidating } = useSWR<any>(
+    (authorized ? balanceKey : null) as any,
+    { fallbackData: (fallbackBalance ?? undefined) as any, revalidateOnMount: true }
+  );
+
+  // Show central loader while initial revalidation happens
+  useEffect(() => {
+    if (!authorized) return;
+    const loading =
+      Boolean(isHistoryValidating) ||
+      Boolean(isBalanceValidating) ||
+      (!historyData && typeof rawBalanceData === 'undefined');
+    if (loading) {
+      loader.show('กำลังโหลดข้อมูล...');
+    } else {
+      loader.hide();
+    }
+    return () => { loader.hide(true); };
+  }, [authorized, isHistoryValidating, isBalanceValidating, historyData, rawBalanceData, loader]);
+
+  // Normalize balance value
+  const balance: number | null = (() => {
+    if (typeof rawBalanceData === 'number') return rawBalanceData;
+    if (rawBalanceData && typeof rawBalanceData === 'object') {
+      if ('balance' in rawBalanceData && typeof rawBalanceData.balance === 'number') return rawBalanceData.balance;
+      if ('data' in rawBalanceData && rawBalanceData.data && typeof rawBalanceData.data.balance === 'number') return rawBalanceData.data.balance;
+    }
+    if (typeof fallbackBalance === 'number') return fallbackBalance;
+    if (fallbackBalance && typeof fallbackBalance === 'object' && 'balance' in fallbackBalance && typeof (fallbackBalance as any).balance === 'number') {
+      return (fallbackBalance as any).balance;
+    }
+    return null;
+  })();
+
+  // Cache SWR results locally for instant future loads
+  useEffect(() => {
+    if (historyData) safeSetJSON(HISTORY_CACHE_KEY, (historyData as Tx[]).slice(0, 200));
+  }, [historyData]);
+
+  useEffect(() => {
+    if (typeof balance === 'number') safeSetJSON(BALANCE_CACHE_KEY, balance);
+  }, [balance]);
+
+  // Combined error handling (SWR)
+  useEffect(() => {
+    if (historyError || balanceError) {
+      console.warn('SWR fetch error', { historyError, balanceError });
+      setError('เกิดปัญหาในการดึงข้อมูล — ระบบจะพยายามโหลดใหม่เล็กน้อย');
+    } else {
+      setError(null);
+    }
+  }, [historyError, balanceError]);
+
+  // If auth not yet checked, render nothing to keep redirect instant and avoid flicker
+  if (!authChecked) return null;
+  if (!authorized) return null;
+
+  const history = historyData ?? [];
+  const sorted = [...(history || [])].sort((a, b) => (b.time || 0) - (a.time || 0));
+  const recent = sorted.slice(0, 3);
+  const totals = (history || []).reduce((acc, tx) => {
+    if (tx.type === 'in') acc.in += Number(tx.amount || 0);
+    else acc.out += Number(tx.amount || 0);
+    return acc;
+  }, { in: 0, out: 0 });
+
   function formatCurrency(n: number | null) {
     if (n === null) return '—';
     return `฿ ${n.toLocaleString()}`;
   }
-  
-  function formatTime(ts: number) {
-    try {
-      return new Date(ts).toLocaleTimeString();
-    } catch {
-      return '-';
-    }
+  function formatDateThai(ts?: number) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    const datePart = new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short' }).format(d);
+    const timePart = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    return `${datePart} ${timePart}`;
   }
-  
-  // Add transaction: keep quick UX + loader + optimistic update then revalidate SWR
-  async function handleAddTransaction() {
-    setSaving(true);
-    try {
-      const amt = typeof amount === 'number' ? amount : Number(amount);
-      if (!amt || amt <= 0) {
-        popup.show('กรุณากรอกจำนวนเงินที่ถูกต้อง', { duration: 2200 });
-        setSaving(false);
-        return;
-      }
-      
-      // Ensure we have a PIN: prefer stored pin, otherwise prompt
-      let pin = '';
-      try {
-        pin = localStorage.getItem('pin') || '';
-      } catch { pin = ''; }
-      
-      if (!pin) {
-        // lightweight prompt (keeps flow fast)
-        const p = window.prompt('กรุณากรอกรหัส PIN เพื่อยืนยันการทำรายการ');
-        if (!p) {
-          popup.show('ยกเลิกการทำรายการ', { duration: 1800 });
-          setSaving(false);
-          return;
-        }
-        pin = p;
-      }
-      
-      // Verify pin before sending (reuse existing checkPin)
-      const check = await pinClient.checkPin(pin);
-      if (!(check.ok && check.data?.ok)) {
-        popup.show('PIN ไม่ถูกต้อง', { duration: 2000 });
-        setSaving(false);
-        return;
-      }
-      
-      // Optimistic UI: compute new balance and prepend tx locally
-      const optimisticNewBalance = (typeof balance === 'number' ? balance : 0) + (mode === 'in' ? amt : -amt);
-      const optimisticTx: Tx = { type: mode, amount: amt, time: Date.now() };
-      
-      // Update UI immediately
-      mutate("/api/balance", { balance: optimisticNewBalance }, false);
-      mutate("/api/history", (current: Tx[] | undefined) => [optimisticTx, ...(current ?? [])].slice(0, 50), false);
-      
-      loader.show('กำลังบันทึก...');
-      const res = await fetch('/api/tx', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: mode, amount: amt, pin }),
-      });
-      loader.hide();
-      
-      if (res.ok) {
-        // let server be source of truth — revalidate in background
-        mutate("/api/balance").catch(() => {});
-        mutate("/api/history").catch(() => {});
-        setAmount('');
-        popup.show('บันทึกเรียบร้อย', { duration: 1400 });
-      } else {
-        // rollback optimistic update by revalidating
-        mutate("/api/balance").catch(() => {});
-        mutate("/api/history").catch(() => {});
-        const text = await res.text().catch(() => 'เกิดข้อผิดพลาด');
-        popup.show(text || 'ไม่สามารถบันทึกได้', { duration: 2200 });
-      }
-    } catch (e) {
-      // roll back on error
-      mutate("/api/balance").catch(() => {});
-      mutate("/api/history").catch(() => {});
-      popup.show('เกิดข้อผิดพลาด กรุณาลองใหม่', { duration: 2200 });
-    } finally {
-      setSaving(false);
-    }
-  }
-  
+
   return (
-    <main className="dashboard-page">
-      <div className="dashboard-vertical">
-        {/* Brand (like PIN pages) */}
-        <div className="dashboard-brand" role="banner" aria-hidden>
-          <div className="logo" aria-hidden>
-            <div className="logo-line1">Money</div>
-            <div className="logo-line2">quick</div>
-          </div>
-          <div className="dashboard-prompt">ภาพรวมบัญชีของคุณ</div>
-        </div>
-
-        {/* Balance */}
-        <div className="dashboard-balance">
-          {balance === null && !balanceError ? (
-            <div className="skeleton skeleton-balance" aria-hidden />
-          ) : (
-            <>
-              <Balance value={balance ?? 0} />
-              <div className="muted small">ยอดคงเหลือ</div>
-            </>
-          )}
-        </div>
-
-        {/* Summary row: labels only (numbers moved to manage page) */}
-        <div className="dashboard-summary-row" role="region" aria-label="สรุปรายรับรายจ่าย">
-          <div className="dashboard-summary in" aria-hidden>
-            + รายรับ
+    <>
+      <main className="dashboard-page" aria-busy={(!historyData || balance === null)}>
+        <div className="dashboard-vertical">
+          {/* Brand (centered like PIN pages) */}
+          <div className="dashboard-brand" role="banner" aria-hidden>
+            <div className="logo" aria-hidden>
+              <div className="logo-line1">Money</div>
+              <div className="logo-line2">quick</div>
+            </div>
+            <div className="dashboard-prompt">ภาพรวมบัญชี</div>
           </div>
 
-          <div className="dashboard-summary out" aria-hidden>
-            − รายจ่าย
-          </div>
-        </div>
+          {/* Card: balance + summaries */}
+          <section className="dashboard-card" style={{ marginTop: 6 }}>
+            <div className="balance-row">
+              <div className="balance-block">
+                <div className="muted">ยอดคงเหลือ</div>
+                <div className="balance-value">
+                  {balance !== null ? <Balance value={balance} /> : <div className="skeleton skeleton-balance" />}
+                </div>
+                <div className="muted small">อัปเดตล่าสุด: {sorted.length ? formatDateThai(sorted[0].time) : '—'}</div>
+              </div>
 
-        {/* Controls: minimal input + action (keep quick interactions) */}
-        <div style={{ width: "100%", marginTop: 10 }}>
-          <ToggleInOut mode={mode} setMode={setMode} />
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 6 }}>
-            <input
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={amount as any}
-              onChange={(e) => {
-                const v = e.target.value.replace(/[^\d]/g, '');
-                setAmount(v === '' ? '' : Number(v));
-              }}
-              placeholder="จำนวนเงิน (เช่น 1000)"
-              className="add-amount-input"
-              style={{
-                flex: 1,
-                padding: '12px 14px',
-                borderRadius: 12,
-                border: '1px solid rgba(15,23,42,0.06)',
-                fontSize: 16,
-                outline: 'none'
-              }}
-              disabled={saving}
-            />
-            <button
-              className="add-tx-btn"
-              onClick={handleAddTransaction}
-              disabled={saving}
-              aria-disabled={saving}
-              aria-label="บันทึกรายการ"
-              style={{ flex: '0 0 120px' }}
-            >
-              {saving ? 'กำลังบันทึก...' : 'บันทึก'}
-            </button>
-          </div>
-        </div>
+              <div className="summary-grid" aria-hidden>
+                <div className="summary-card in">
+                  <div className="small muted">รวมรายรับ</div>
+                  <div className="summary-value">{formatCurrency(totals.in)}</div>
+                </div>
+                <div className="summary-card out">
+                  <div className="small muted">รวมรายจ่าย</div>
+                  <div className="summary-value">{formatCurrency(totals.out)}</div>
+                </div>
+              </div>
+            </div>
 
-        {/* Recent list header with "ดูประวัติทั้งหมด" aligned to the right */}
-        <div className="recent-header" style={{ width: '100%', marginTop: 18, alignItems: 'center' }}>
-          <h3 style={{ margin: 0 }}>รายการล่าสุด</h3>
-          <div style={{ marginLeft: 'auto' }}>
+            <div className="dashboard-actions">
+              <div className="note muted small">ระบบศูนย์กลางจัดการการเก็บ/ลบข้อมูล (ประวัติจะถูกจัดการที่ฝั่ง server)</div>
+            </div>
+          </section>
+
+          {/* Recent header: title left, history link right (same baseline) */}
+          <div className="dashboard-recent-header" style={{ width: '100%', marginTop: 18 }}>
+            <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--muted)', fontWeight: 700 }}>กิจกรรมล่าสุด</h3>
             <PrefetchOnHover href="/history">
-              <a className="view-all-btn" href="/history">ดูประวัติทั้งหมด</a>
+              <a className="history-link" style={{ textDecoration: 'none' }}>ดูประวัติทั้งหมด</a>
             </PrefetchOnHover>
           </div>
-        </div>
 
-        {/* Recent list */}
-        <div className="dashboard-recent" style={{ width: '100%' }}>
-          <div className="dashboard-recent-list" role="list">
-            {(!items || items.length === 0) && !historyError ? (
-              // show a few skeleton rows so page feels responsive while loading
-              <>
-                <div className="dashboard-recent-item"><div className="skeleton skeleton-avatar" /> <div style={{ flex: 1 }}><div className="skeleton skeleton-line" /></div> <div className="skeleton skeleton-amount" /></div>
-                <div className="dashboard-recent-item"><div className="skeleton skeleton-avatar" /> <div style={{ flex: 1 }}><div className="skeleton skeleton-line short" /></div> <div className="skeleton skeleton-amount" /></div>
-                <div className="dashboard-recent-item"><div className="skeleton skeleton-avatar" /> <div style={{ flex: 1 }}><div className="skeleton skeleton-line" /></div> <div className="skeleton skeleton-amount" /></div>
-              </>
-            ) : items.length === 0 ? (
-              <div className="empty">ยังไม่มีรายการ</div>
-            ) : (
-              items.map((tx, idx) => (
-                <div key={idx} className="dashboard-recent-item" role="listitem">
-                  <div className={`dashboard-recent-avatar ${tx.type === 'in' ? 'in' : 'out'}`} aria-hidden>
-                    {tx.type === 'in' ? '+' : '−'}
+          {/* Recent list */}
+          <section className="recent-section" style={{ width: '100%', marginTop: 8 }}>
+            <div className="recent-list">
+              {(!history || history.length === 0) ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div className="recent-item skeleton-row" key={i}>
+                    <div className="skeleton avatar" />
+                    <div className="skeleton-lines" style={{ flex: 1 }}>
+                      <div className="skeleton skeleton-line short" />
+                      <div className="skeleton skeleton-line tiny" />
+                    </div>
+                    <div className="skeleton skeleton-amount" />
                   </div>
-                  <div className="dashboard-recent-meta">
-                    <div className="recent-title">{tx.type === 'in' ? 'รายรับ' : 'รายจ่าย'}</div>
-                    <div className="muted small">{new Date(tx.time).toLocaleDateString()} • {formatTime(tx.time)}</div>
+                ))
+              ) : recent.length ? (
+                recent.map((tx, idx) => (
+                  <div key={idx} className="recent-item">
+                    <div className={`avatar ${tx.type === 'in' ? 'in' : 'out'}`}>{tx.type === 'in' ? '+' : '−'}</div>
+                    <div className="recent-meta">
+                      <div className="recent-title">{tx.type === 'in' ? 'เงินเข้า' : 'เงินออก'}</div>
+                      <div className="muted small">{formatDateThai(tx.time)}</div>
+                    </div>
+                    <div className={`recent-amount ${tx.type === 'in' ? 'in' : 'out'}`}>
+                      {tx.type === 'in' ? '+' : '-'} ฿ {tx.amount.toLocaleString()}
+                    </div>
                   </div>
-                  <div className="dashboard-recent-amount">{formatCurrency(tx.amount)}</div>
-                </div>
-              ))
-            )}
-          </div>
+                ))
+              ) : (
+                <div className="empty">ยังไม่มีรายการ</div>
+              )}
+            </div>
+          </section>
+
+          <section className="info-section" style={{ marginTop: 14 }}>
+            <div className="info-card">
+              <div className="info-title">คำแนะนำ</div>
+              <ul>
+                <li>ข้อมูลประวัติและการลบถูกจัดการจากฝั่งศูนย์กลาง (server)</li>
+                <li>หากต้องการเก็บประวัติระยะยาว โปรดสำรองข้อมูลภายนอก</li>
+              </ul>
+            </div>
+          </section>
+
+          {error && <div className="error-text" style={{ marginTop: 12 }}>{error}</div>}
         </div>
+      </main>
 
-        {/* Removed "ไปจัดการ" link — center FAB in BottomNav provides add/manage action */}
-      </div>
-
-      {/* Bottom nav (page-level) */}
       <BottomNav />
-    </main>
+    </>
   );
 }
