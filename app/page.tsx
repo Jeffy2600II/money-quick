@@ -147,12 +147,12 @@ export default function MainPage() {
         {/* Summary row */}
         <div className="dashboard-summary-row" role="region" aria-label="สรุปรายรับรายจ่าย">
           <div className="dashboard-summary in" aria-hidden>
-            รายรับ ({monthNameThai})
+            รายรับ {monthNameThai}
             <div className="summary-value">฿ {inTotalThisMonth.toLocaleString()}</div>
           </div>
 
           <div className="dashboard-summary out" aria-hidden>
-            รายจ่าย ({monthNameThai})
+            รายจ่าย {monthNameThai}
             <div className="summary-value">฿ {outTotalThisMonth.toLocaleString()}</div>
           </div>
         </div>
