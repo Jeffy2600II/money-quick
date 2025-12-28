@@ -2,22 +2,28 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Balance from "../components/Balance";
-import * as pinClient from "../lib/pinClient";
 import BottomNav from "../components/BottomNav";
 import '../styles/dashboard.css';
 
 type Tx = { type: 'in' | 'out' | string; amount: number; time: number };
 
 /**
- * Fast-auth dashboard:
- * - No loader overlay during auth. Auth runs immediately and returns quickly.
- * - If not authenticated -> redirect immediately to /lock or /setup-pin.
- * - If authenticated -> load dashboard data and render UI (skeletons while data loading).
+ * Dashboard (fast local auth)
+ *
+ * Auth behaviour:
+ * - Only check browser-stored session info (localStorage). No server-side PIN check here to keep auth instant.
+ * - If a local PIN exists and (optionally) a stored expiry hasn't passed -> treat as authorized.
+ * - If no local PIN (or expired) -> redirect immediately to /lock so user can enter PIN (or /setup-pin flows).
+ *
+ * Notes:
+ * - This makes the initial auth/redirect extremely fast because it avoids DB calls.
+ * - Sensitive operations that change data should still be validated server-side (server must re-check PIN for critical writes).
  */
+
 export default function MainPage() {
   const router = useRouter();
 
-  const [authChecked, setAuthChecked] = useState(false); // turned true after auth attempt finishes (or redirect happens)
+  const [authChecked, setAuthChecked] = useState(false);
   const [authorized, setAuthorized] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [balance, setBalance] = useState<number | null>(null);
@@ -27,47 +33,44 @@ export default function MainPage() {
   useEffect(() => {
     let mounted = true;
 
-    async function fastAuthAndLoad() {
+    async function init() {
       try {
-        // 1) Quick local session check
+        // 1) QUICK local-session check (synchronous-ish)
         let localPin: string | null = null;
         try { localPin = window.localStorage.getItem('pin'); } catch { localPin = null; }
 
-        if (!localPin) {
-          // No session PIN -> ask server whether a PIN exists
-          const has = await pinClient.hasPin();
-          if (!has.ok) {
-            // If server error, send to lock as conservative default
-            router.replace('/lock');
-            return;
-          }
-          if (!has.data?.exists) {
-            router.replace('/setup-pin');
-            return;
-          }
+        // Optional expiry support: if you set 'pin_expires_at' (ms epoch), respect it
+        if (localPin) {
+          try {
+            const expiry = window.localStorage.getItem('pin_expires_at');
+            if (expiry) {
+              const ts = Number(expiry);
+              if (!Number.isNaN(ts) && ts > 0 && Date.now() > ts) {
+                // expired
+                try { window.localStorage.removeItem('pin'); window.localStorage.removeItem('pin_expires_at'); } catch {}
+                router.replace('/lock');
+                return;
+              }
+            }
+          } catch {}
+          // treat as authorized (fast)
+          setAuthorized(true);
+        } else {
+          // no local session -> go to lock (lock handles forgot/setup flows)
           router.replace('/lock');
           return;
         }
 
-        // 2) Verify localPin with server immediately
-        const check = await pinClient.checkPin(localPin);
-        if (!check.ok || !check.data?.ok) {
-          try { window.localStorage.removeItem('pin'); } catch {}
-          router.replace('/lock');
-          return;
-        }
-
-        // Authorized -> mark and load data
+        // 2) Authorized locally -> load server data (balance / history)
         if (!mounted) return;
-        setAuthorized(true);
-
-        // Load data (no auth overlay)
         setLoadingData(true);
         try {
           const [bRes, hRes] = await Promise.all([fetch("/api/balance"), fetch("/api/history")]);
           if (!mounted) return;
 
-          if (!bRes.ok || !hRes.ok) throw new Error('Failed to load data');
+          if (!bRes.ok || !hRes.ok) {
+            throw new Error('Failed to load data');
+          }
 
           const bJson = await bRes.json();
           const hJson = await hRes.json();
@@ -81,28 +84,29 @@ export default function MainPage() {
           if (mounted) setLoadingData(false);
         }
       } catch (e) {
-        console.error('Auth error', e);
-        try { window.localStorage.removeItem('pin'); } catch {}
+        console.error('Init error', e);
+        // fallback: clear any local pin and go to lock
+        try { window.localStorage.removeItem('pin'); window.localStorage.removeItem('pin_expires_at'); } catch {}
         router.replace('/lock');
       } finally {
         if (mounted) setAuthChecked(true);
       }
     }
 
-    // Run immediately, no artificial delays
-    void fastAuthAndLoad();
+    // run immediately, no artificial delay
+    void init();
 
     return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // While auth hasn't completed (fast background work), render nothing so user gets redirected quickly if needed.
+  // If auth not yet checked, render nothing so redirects happen instantly (no flicker).
   if (!authChecked) return null;
 
-  // If not authorized after the check, we've redirected; fallback render nothing.
+  // If not authorized, we've redirected — fallback no render.
   if (!authorized) return null;
 
-  // Authorized: render dashboard (skeletons if loadingData)
+  // Authorized: render dashboard
   const sorted = [...history].sort((a, b) => (b.time || 0) - (a.time || 0));
   const recent = sorted.slice(0, 3);
   const totals = history.reduce(
