@@ -1,48 +1,41 @@
-/* Dashboard — Airy / Spacious redesign
-   - เพิ่ม spacing, line-height และ padding เพื่อให้ UI เบา-โปร่ง-เป็นระดับแอป
-   - ใช้ CSS variables ให้แมปกับ globals ได้สะดวก
-   - ปรับขนาด avatar, card padding, gaps, และ skeletons
-   - เก็บ responsiveness และ accessibility
-*/
-
 :root{
-  --bg: var(--neutral-50, #f6f9f8);
+  /* Increased spacing and relaxed sizing for an airy, app-quality layout */
+  --bg: var(--neutral-50, #f6f8f7);
   --card-bg: #ffffff;
   --muted: var(--neutral-500, #6b7280);
-  --muted-2: rgba(15,23,42,0.5);
+  --muted-2: rgba(15,23,42,0.45);
   --accent: var(--primary-600, #00c48a);
   --accent-strong: #059669;
   --danger: var(--error, #dc2626);
-  --shadow-soft: 0 8px 30px rgba(7,11,20,0.06);
-  --shadow-subtle: 0 6px 18px rgba(7,11,20,0.04);
-  --radius-lg: 18px;
-  --radius-md: 12px;
+  --shadow-sm: 0 10px 30px rgba(7,11,20,0.06);
+  --shadow-md: 0 20px 48px rgba(7,11,20,0.08);
+  --radius: 18px;
   --container-width: 820px;
-  --gap-xl: 28px;
-  --gap-lg: 20px;
-  --gap-md: 14px;
-  --nav-height: 78px;
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  --gap: 24px;
+  --section-gap: 28px;
+  --nav-height: 76px;
+  --font-body-size: 16px;
+  --line-height: 1.6;
 }
 
 /* Page */
 .dashboard-page{
   min-height: 100vh;
-  background: linear-gradient(180deg, var(--bg) 0%, #fbfdfc 100%);
+  background: linear-gradient(180deg, var(--bg) 0%, #fcfefe 100%);
   padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 24px);
   display:flex;
   justify-content:center;
   align-items:flex-start;
-  padding-top: 32px;
+  padding-top: 28px;
   box-sizing: border-box;
   color: var(--neutral-900, #0f172a);
-  font-family: var(--font-sans);
+  font-size: var(--font-body-size);
+  line-height: var(--line-height);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
-  line-height: 1.45;
 }
 
-/* Container - more whitespace around edges */
+/* Container */
 .dashboard-container{
   width: 100%;
   max-width: var(--container-width);
@@ -50,15 +43,15 @@
   box-sizing: border-box;
 }
 
-/* Header: larger spacing and breathing room */
+/* Header */
 .dashboard-header{
   display:flex;
   align-items:flex-start;
   justify-content:space-between;
-  gap: var(--gap-xl);
-  margin-bottom: 22px;
+  gap: var(--gap);
+  margin-bottom: calc(var(--section-gap) / 2);
 }
-.brand { display:flex; flex-direction:column; gap:6px; }
+.brand { display:flex; flex-direction:column; gap:8px; }
 .logo-line1 {
   font-size: 30px;
   font-weight: 800;
@@ -66,59 +59,67 @@
   color: var(--neutral-900, #0f172a);
 }
 .logo-line2 {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
   color: var(--accent);
   margin-top: -6px;
+  letter-spacing: -0.01em;
 }
 .pin-prompt{
   color: var(--muted);
   font-weight: 600;
-  font-size: 0.98rem;
+  font-size: 1rem;
 }
 
-/* header actions - bigger hit area */
+/* header actions */
 .header-actions { display:flex; gap:12px; align-items:center; }
 .icon-btn {
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  width:50px;
-  height:50px;
-  border-radius:14px;
-  background: rgba(255,255,255,0.6);
+  width:52px;
+  height:52px;
+  border-radius:12px;
+  background: rgba(255,255,255,0.7);
   border: 1px solid rgba(15,23,42,0.04);
   color: var(--muted-2);
-  transition: transform .16s ease, box-shadow .16s ease;
+  transition: all 160ms ease;
   text-decoration: none;
 }
 .icon-btn:hover {
   transform: translateY(-3px);
-  box-shadow: var(--shadow-subtle);
+  box-shadow: var(--shadow-sm);
   color: var(--neutral-800);
 }
 
-/* Main cards: more airy padding + bigger radius + soft shadow */
-.dashboard-card{
+/* Card base */
+.card {
   background: var(--card-bg);
-  border-radius: var(--radius-lg);
-  padding: 26px;
-  box-shadow: var(--shadow-soft);
-  border: 1px solid rgba(15,23,42,0.035);
+  border-radius: calc(var(--radius) + 2px);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(15,23,42,0.04);
 }
 
-/* Balance + summary layout — more spacious & responsive */
+/* Top overview card */
+.dashboard-card{
+  composes: card;
+  padding: 24px;
+  margin-bottom: var(--section-gap);
+}
+
+/* Balance + summary layout (more spacious) */
 .balance-row{
   display:grid;
   grid-template-columns: 1fr 260px;
-  gap: var(--gap-lg);
+  gap: 24px;
   align-items: start;
 }
 .balance-block { min-width: 0; }
 .muted { color: var(--muted); }
-.small { font-size: 0.92rem; color: var(--muted); }
+.small { font-size: 0.95rem; color: var(--muted); }
 
-/* Balance area — bigger, airy */
+/* Balance visual */
 .balance-value{
   margin-top: 14px;
   display:flex;
@@ -132,97 +133,93 @@
   letter-spacing: -0.02em;
 }
 
-/* visual balance card for emphasized number */
+/* Balance mini card */
 .balance-card {
   display:flex;
-  align-items:center;
-  gap: 16px;
-  padding: 18px;
+  flex-direction:column;
+  gap:8px;
+  padding: 16px;
   border-radius: 14px;
-  background: linear-gradient(180deg, rgba(0,196,138,0.06), rgba(0,196,138,0.03));
+  background: linear-gradient(180deg, rgba(0,196,138,0.06), rgba(0,196,138,0.02));
   border: 1px solid rgba(4,153,111,0.06);
 }
 
-/* Summary column (in/out) — larger cards, more whitespace */
+/* Summary column (in/out) */
 .summary-grid{
   display:flex;
   flex-direction:column;
-  gap:16px;
+  gap:14px;
   width:100%;
 }
 .summary-card{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  padding: 16px 18px;
+  padding: 14px 16px;
   border-radius: 14px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.92));
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.95));
   border: 1px solid rgba(15,23,42,0.03);
-  box-shadow: var(--shadow-subtle);
+  box-shadow: none;
 }
 .summary-card .small { color: var(--muted); font-weight:700; }
-.summary-value { font-weight:800; font-size:1.12rem; }
+.summary-value { font-weight:800; font-size:1.1rem; }
 
-/* In/Out color accents */
+/* In/Out colors */
 .summary-card.in { color: var(--accent-strong); }
 .summary-card.out { color: var(--danger); }
 
-/* Info/note area — more breathing */
+/* Actions / note area */
 .dashboard-actions {
   margin-top: 18px;
   display:flex;
   align-items:center;
   justify-content:flex-start;
-  padding-top: 8px;
-  border-top: 1px dashed rgba(15,23,42,0.02);
 }
 
-/* Recent section — increased spacing and clearer division */
-.recent-section { margin-top: 26px; }
+/* Recent section */
+.recent-section { margin-top: var(--section-gap); }
 .recent-header{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  gap: 18px;
+  gap: 14px;
   margin-bottom: 14px;
 }
-.recent-header h2 { font-size: 1.12rem; font-weight:800; margin:0; letter-spacing: -0.01em; }
+.recent-header h2 { font-size: 1.15rem; font-weight:800; margin:0; }
 .link-button {
   color: var(--accent);
   text-decoration:none;
   font-weight:700;
-  padding:8px 14px;
+  padding:10px 14px;
   border-radius: 10px;
   border: 1px solid transparent;
-  transition: background .14s ease, transform .14s ease;
+  transition: all 140ms ease;
 }
 .link-button:hover { background: rgba(0,196,138,0.04); transform: translateY(-2px); }
 
-/* Recent list container */
+/* Recent list — more airy, larger padding */
 .recent-list {
   background: var(--card-bg);
   border-radius: 16px;
   overflow:hidden;
   border: 1px solid rgba(15,23,42,0.04);
-  box-shadow: var(--shadow-subtle);
+  box-shadow: var(--shadow-sm);
 }
-
-/* Each item: more vertical padding, relaxed spacing */
 .recent-item {
   display:grid;
   grid-template-columns: 72px 1fr 140px;
-  gap: 18px;
+  gap: 20px;
   align-items:center;
   padding: 18px 20px;
   border-bottom: 1px solid rgba(15,23,42,0.035);
 }
 .recent-item:last-child { border-bottom: none; }
 
-/* Avatar: larger + softer visuals */
+/* avatar */
 .avatar {
   width:72px;
   height:72px;
-  border-radius: 14px;
+  border-radius: 16px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -230,34 +227,35 @@
   color: var(--neutral-900);
   background: rgba(0,0,0,0.04);
   box-shadow: inset 0 -2px 0 rgba(0,0,0,0.02);
+  font-size:1.1rem;
 }
-.avatar.in { background: linear-gradient(180deg, rgba(2,161,126,0.11), rgba(2,161,126,0.04)); color: var(--accent-strong); }
-.avatar.out { background: linear-gradient(180deg, rgba(239,68,68,0.11), rgba(239,68,68,0.04)); color: var(--danger); }
+.avatar.in { background: linear-gradient(180deg, rgba(2,161,126,0.10), rgba(2,161,126,0.02)); color: var(--accent-strong); }
+.avatar.out { background: linear-gradient(180deg, rgba(239,68,68,0.10), rgba(239,68,68,0.02)); color: var(--danger); }
 
-/* Meta text: more line-height and spacing */
+/* meta */
 .recent-meta { min-width: 0; }
-.recent-title { font-weight:800; font-size: 1.02rem; margin-bottom:6px; }
-.recent-meta .muted { font-size: 0.94rem; color: var(--muted); }
+.recent-title { font-weight:800; font-size: 1rem; margin-bottom:6px; }
+.recent-meta .muted { font-size: 0.95rem; color: var(--muted); }
 
-/* Amount: emphasis and spacing */
-.recent-amount { text-align:right; font-weight:900; font-size: 1.06rem; color: var(--neutral-900); }
+/* amount */
+.recent-amount { text-align:right; font-weight:900; font-size: 1.1rem; }
 
-/* Empty / error states: bigger padding */
-.empty { padding: 26px; text-align:center; color: var(--muted); font-weight:700; }
-.error-text { color: var(--danger); padding: 14px; font-weight:800; }
+/* empty and error states */
+.empty { padding: 28px; text-align:center; color: var(--muted); font-weight:600; }
+.error-text { color: var(--danger); padding: 14px; font-weight:700; }
 
-/* Info card tweaks */
-.info-section { margin-top: 26px; }
+/* Info / tips card */
+.info-section { margin-top: var(--section-gap); }
 .info-card {
   background: var(--card-bg);
   border-radius: 14px;
   padding: 18px;
   border: 1px solid rgba(15,23,42,0.04);
-  box-shadow: var(--shadow-subtle);
+  box-shadow: var(--shadow-sm);
 }
 .info-title { font-weight:800; margin-bottom:10px; }
 
-/* Skeleton: larger, smoother */
+/* Skeleton utilities (larger, less aggressive) */
 .skeleton {
   background: linear-gradient(90deg, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0.04) 50%, rgba(0,0,0,0.06) 100%);
   background-size: 200% 100%;
@@ -265,37 +263,36 @@
   border-radius: 12px;
 }
 @keyframes shimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
-.skeleton-balance { height: 84px; width: 360px; border-radius: 14px; }
+.skeleton-balance { height: 80px; width: 360px; border-radius: 14px; }
 .skeleton-line { height: 16px; width: 100%; border-radius: 10px; }
-.skeleton-line.short { width: 60%; }
+.skeleton-line.short { width: 52%; }
 .skeleton-line.tiny { width: 40%; height: 12px; margin-top: 10px; border-radius: 8px; }
-.skeleton.avatar { width:72px; height:72px; border-radius:14px; }
+.skeleton.avatar { width:72px; height:72px; border-radius:16px; }
 
-/* Accessibility focus ring */
+/* Accessibility focus */
 a:focus, button:focus {
   outline: 3px solid rgba(0,196,138,0.12);
-  outline-offset: 3px;
+  outline-offset: 4px;
   border-radius: 10px;
 }
 
-/* Responsive adjustments — keep airy spacing on smaller screens */
-@media (max-width: 880px) {
-  :root { --container-width: 100%; }
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  :root { --container-width: 720px; }
   .dashboard-container { padding: 20px; }
   .balance-row { grid-template-columns: 1fr; }
   .summary-grid { flex-direction: row; gap: 12px; width: 100%; }
-  .summary-card { flex: 1; padding: 14px 12px; }
-  .recent-item { grid-template-columns: 64px 1fr 110px; padding: 14px 16px; gap: 12px; }
-  .avatar { width:64px; height:64px; border-radius: 12px; }
-  .skeleton-balance { width: 100%; height: 72px; }
+  .summary-card { flex: 1; }
+  .recent-item { grid-template-columns: 64px 1fr 120px; padding: 14px 16px; gap: 16px; }
+  .avatar { width:64px; height:64px; border-radius:14px; }
 }
 
-@media (max-width: 460px) {
+/* Tight mobile */
+@media (max-width: 420px) {
   .dashboard-container { padding: 14px; }
-  .recent-item { grid-template-columns: 52px 1fr 92px; gap: 10px; padding: 12px; }
-  .logo-line1 { font-size: 22px; }
-  .logo-line2 { font-size: 16px; }
+  .recent-item { grid-template-columns: 52px 1fr 92px; gap: 12px; padding: 12px; }
+  .skeleton-balance { width: 100%; height: 66px; }
   .balance-value .pin-value { font-size: 1.6rem; }
-  .avatar { width:52px; height:52px; }
-  .skeleton-balance { height: 64px; }
+  .logo-line1 { font-size: 20px; }
+  .logo-line2 { font-size: 14px; }
 }
