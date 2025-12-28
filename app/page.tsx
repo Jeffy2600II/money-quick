@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Balance from "../components/Balance";
-import { useLoader } from "../components/LoaderProvider";
 import * as pinClient from "../lib/pinClient";
 import BottomNav from "../components/BottomNav";
 import '../styles/dashboard.css';
@@ -10,13 +9,15 @@ import '../styles/dashboard.css';
 type Tx = { type: 'in' | 'out' | string; amount: number; time: number };
 
 /**
- * Dashboard page — authentication uses only LoaderProvider overlay (no custom UI).
- * While auth is pending we render nothing (loader overlay shown by LoaderProvider).
+ * Fast-auth dashboard:
+ * - No loader overlay during auth. Auth runs immediately and returns quickly.
+ * - If not authenticated -> redirect immediately to /lock or /setup-pin.
+ * - If authenticated -> load dashboard data and render UI (skeletons while data loading).
  */
 export default function MainPage() {
   const router = useRouter();
-  const loader = useLoader();
 
+  const [authChecked, setAuthChecked] = useState(false); // turned true after auth attempt finishes (or redirect happens)
   const [authorized, setAuthorized] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [balance, setBalance] = useState<number | null>(null);
@@ -28,17 +29,15 @@ export default function MainPage() {
 
     async function fastAuthAndLoad() {
       try {
-        // Use central loader only
-        loader.show('กำลังตรวจสอบสิทธิ์...');
-
-        // 1) Check local session PIN quickly
+        // 1) Quick local session check
         let localPin: string | null = null;
         try { localPin = window.localStorage.getItem('pin'); } catch { localPin = null; }
 
         if (!localPin) {
+          // No session PIN -> ask server whether a PIN exists
           const has = await pinClient.hasPin();
-          loader.hide();
           if (!has.ok) {
+            // If server error, send to lock as conservative default
             router.replace('/lock');
             return;
           }
@@ -50,22 +49,20 @@ export default function MainPage() {
           return;
         }
 
-        // 2) Verify localPin with server
+        // 2) Verify localPin with server immediately
         const check = await pinClient.checkPin(localPin);
         if (!check.ok || !check.data?.ok) {
           try { window.localStorage.removeItem('pin'); } catch {}
-          loader.hide();
           router.replace('/lock');
           return;
         }
 
-        // authorized
+        // Authorized -> mark and load data
         if (!mounted) return;
         setAuthorized(true);
 
-        // load data
+        // Load data (no auth overlay)
         setLoadingData(true);
-        loader.show('กำลังโหลดข้อมูล...');
         try {
           const [bRes, hRes] = await Promise.all([fetch("/api/balance"), fetch("/api/history")]);
           if (!mounted) return;
@@ -77,34 +74,35 @@ export default function MainPage() {
 
           setBalance(Number(bJson.balance ?? 0));
           setHistory(Array.isArray(hJson) ? (hJson as Tx[]) : []);
+        } catch (e) {
+          console.error('Data load error', e);
+          setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
         } finally {
-          if (mounted) {
-            loader.hide();
-            setLoadingData(false);
-          }
+          if (mounted) setLoadingData(false);
         }
       } catch (e) {
-        console.error('Auth/load error:', e);
+        console.error('Auth error', e);
         try { window.localStorage.removeItem('pin'); } catch {}
-        loader.hide();
-        setError('เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์');
         router.replace('/lock');
+      } finally {
+        if (mounted) setAuthChecked(true);
       }
     }
 
+    // Run immediately, no artificial delays
     void fastAuthAndLoad();
 
-    return () => {
-      mounted = false;
-      loader.hide(true);
-    };
+    return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // While authorization hasn't completed or user is being redirected, render nothing.
+  // While auth hasn't completed (fast background work), render nothing so user gets redirected quickly if needed.
+  if (!authChecked) return null;
+
+  // If not authorized after the check, we've redirected; fallback render nothing.
   if (!authorized) return null;
 
-  // Authorized: render dashboard
+  // Authorized: render dashboard (skeletons if loadingData)
   const sorted = [...history].sort((a, b) => (b.time || 0) - (a.time || 0));
   const recent = sorted.slice(0, 3);
   const totals = history.reduce(
