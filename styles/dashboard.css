@@ -1,4 +1,4 @@
-/* Dashboard — Redesigned for better space, clear direction and horizontal efficiency
+dashboard-vertical* Dashboard — Redesigned for better space, clear direction and horizontal efficiency
    - Lighter, airier spacing (especially on mobile)
    - Column direction similar to PIN pages: clear top brand -> balance -> summary -> recent
    - Minimal shadows; active interactions scale to 0.98 for tactile feedback
@@ -79,34 +79,27 @@
 
 .summary-value { font-weight: 800; margin-top: 6px; font-size: 1rem; }
 
-/* Recent header: title + right-aligned link (same baseline) */
+/* Recent header: title + right-aligned link */
 .dashboard-recent-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 18px;
+  gap: 12px;
+  margin-bottom: 6px;
 }
-.dashboard-recent-header h3 {
-  margin: 0;
-  font-size: 1rem;
-  color: var(--muted);
-  font-weight: 700;
-}
-.history-link {
-  font-weight: 700;
+
+/* Link button style (right-side "ดูประวัติทั้งหมด") */
+.link-button {
   color: var(--accent-strong, #04996f);
   text-decoration: none;
-  font-size: 0.96rem;
-  padding: 6px 8px;
-  border-radius: 8px;
-  transition: transform 120ms ease, opacity 120ms ease;
+  font-weight: 600;
+  font-size: 0.95rem;
 }
-.history-link:active { transform: scale(0.98); }
 
 /* Recent list */
 .dashboard-recent {
   width: 100%;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 .dashboard-recent-list {
   width: 100%;
@@ -166,7 +159,7 @@
   .dashboard-summary { padding: 10px 8px; font-size: 0.95rem; }
   .dashboard-recent-avatar { width: 36px; height: 36px; border-radius: 8px; }
   .dashboard-recent-amount { min-width: 64px; font-size: 0.95rem; }
-  .history-link { padding: 4px 6px; font-size: 0.92rem; }
+  .link-button { font-size: 0.9rem; }
 }
 
 /* Desktop: utilize horizontal space effectively while keeping the same vertical flow */
