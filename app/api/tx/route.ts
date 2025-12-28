@@ -1,11 +1,10 @@
-import { getKV, setKV } from "../../../lib/kv";
 import { checkPin } from "../../../lib/pin";
+import { upstashGet, upstashPipeline } from "../../../lib/upstash";
 
 export const dynamic = 'force-dynamic';
 
 function secondsUntilMonthEnd(ts = Date.now()) {
   const d = new Date(ts);
-  // move to first day of next month at 00:00:00
   const year = d.getFullYear();
   const month = d.getMonth();
   const next = new Date(year, month + 1, 1, 0, 0, 0, 0);
@@ -13,18 +12,62 @@ function secondsUntilMonthEnd(ts = Date.now()) {
 }
 
 export async function POST(req: Request) {
-  const { type, amount, pin } = await req.json();
-  if (!await checkPin(pin)) return new Response("Unauthorized", { status: 401 });
-  if ((type !== "in" && type !== "out") || typeof amount !== "number" || amount <= 0)
-    return new Response("Bad Request", { status: 400 });
-  
-  let balance = Number(await getKV < number > ("balance")) || 0;
-  const time = Date.now();
-  const newBalance = type === "in" ? balance + amount : balance - amount;
-  // update balance (no ttl)
-  await setKV("balance", newBalance);
-  // store transaction with expiry at month end
-  const ttl = secondsUntilMonthEnd(time);
-  await setKV(`tx:${time}`, { type, amount, time }, ttl);
-  return Response.json({ newBalance });
+  try {
+    const { type, amount, pin } = await req.json();
+
+    // validation
+    if (!await checkPin(pin)) return new Response("Unauthorized", { status: 401 });
+    if ((type !== "in" && type !== "out") || typeof amount !== "number" || amount <= 0) {
+      return new Response("Bad Request", { status: 400 });
+    }
+
+    const time = Date.now();
+
+    // read current balance (best-effort)
+    let currentBalance = 0;
+    try {
+      const raw = await upstashGet("balance", { timeoutMs: 2500, retries: 1, parseJSON: false });
+      if (raw !== null && raw !== undefined) {
+        if (typeof raw === "number") currentBalance = raw;
+        else if (typeof raw === "string") {
+          const p = Number(raw);
+          if (!Number.isNaN(p)) currentBalance = p;
+        }
+      }
+    } catch (e) {
+      // fallback to 0 if read fails — pipeline will still attempt writes
+      console.warn("upstashGet balance failed, fallback to 0", e);
+    }
+
+    const newBalance = type === "in" ? currentBalance + amount : currentBalance - amount;
+    const ttl = Math.max(1, Math.floor(secondsUntilMonthEnd(time)));
+
+    const tx = { type, amount, time };
+
+    // monthly summary key (durable)
+    const d = new Date(time);
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; // e.g. 2025-12
+    const summaryKey = `summary:${ym}`;
+    const summaryField = type === "in" ? "in" : "out";
+
+    try {
+      // pipeline: set balance, set tx with EX, hincrbyfloat summary
+      await upstashPipeline(
+        [
+          ["set", "balance", String(newBalance)],
+          ["set", `tx:${time}`, JSON.stringify(tx), "EX", ttl],
+          ["hincrbyfloat", summaryKey, summaryField, String(amount)]
+        ],
+        { timeoutMs: 4000, retries: 2 }
+      );
+    } catch (e) {
+      console.error("upstashPipeline error:", e);
+      return new Response("Internal server error", { status: 500 });
+    }
+
+    return Response.json({ newBalance });
+  } catch (err: any) {
+    console.error("tx handler error:", err);
+    return new Response("Internal server error", { status: 500 });
+  }
 }

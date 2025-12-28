@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import '../styles/dashboard.css';
 import Balance from "../components/Balance";
@@ -12,113 +11,76 @@ import * as pinClient from "../lib/pinClient";
 
 type Tx = { type: 'in' | 'out' | string; amount: number; time: number };
 
-const SESSION_FLAG_KEY = 'session_valid_v1';
 const HISTORY_CACHE_KEY = 'history_cache_v1';
 const BALANCE_CACHE_KEY = 'balance_cache_v1';
 
-// safe localStorage helpers
 function safeGetJSON<T>(key: string): T | null {
-  try {
-    const raw = typeof window !== "undefined" ? window.localStorage.getItem(key) : null;
-    if (!raw) return null;
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
+  try { const raw = typeof window !== 'undefined' ? window.localStorage.getItem(key) : null; if (!raw) return null; return JSON.parse(raw) as T; } catch { return null; }
 }
-function safeSetJSON<T>(key: string, data: T) {
-  try {
-    window.localStorage.setItem(key, JSON.stringify(data));
-  } catch {}
-}
-function safeRemove(key: string) {
-  try { window.localStorage.removeItem(key); } catch {}
-}
+function safeSetJSON<T>(key: string, data: T) { try { window.localStorage.setItem(key, JSON.stringify(data)); } catch {} }
 
 export default function MainPage() {
-  const router = useRouter();
   const loader = useLoader();
 
   const [authChecked, setAuthChecked] = useState(false);
   const [authorized, setAuthorized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fast local session check (instant) then background verify
+  // Fast auth (keeps previous approach)
   useEffect(() => {
     let mounted = true;
     (async function fastAuth() {
       try {
-        // 1) check short-lived session flag
-        const raw = safeGetJSON<{ expires: number }>(SESSION_FLAG_KEY);
-        if (raw && raw.expires && Date.now() < raw.expires) {
-          setAuthorized(true);
-          setAuthChecked(true);
-          return;
-        }
-
-        // 2) if no session flag, check local pin presence
-        let localPin: string | null = null;
-        try { localPin = window.localStorage.getItem('pin'); } catch { localPin = null; }
-
+        const localPin = typeof window !== "undefined" ? window.localStorage.getItem('pin') : null;
         if (!localPin) {
-          // no local auth -> redirect to lock page
-          router.replace('/lock');
+          window.location.href = '/lock';
           return;
         }
-
-        // 3) verify pin once in background
         const check = await pinClient.checkPin(localPin);
         if (!check.ok || !check.data?.ok) {
-          try { window.localStorage.removeItem('pin'); safeRemove(SESSION_FLAG_KEY); } catch {}
-          router.replace('/lock');
+          try { localStorage.removeItem('pin'); } catch {}
+          window.location.href = '/lock';
           return;
         }
-
-        // 4) short lived session flag to speed up re-entries
-        try {
-          const SESSION_MS = 3 * 60 * 1000; // 3 minutes
-          safeSetJSON(SESSION_FLAG_KEY, { expires: Date.now() + SESSION_MS });
-        } catch {}
-
         if (!mounted) return;
-        setAuthorized(true);
-        setAuthChecked(true);
+        setAuthorized(true); setAuthChecked(true);
       } catch (e) {
         console.error('fastAuth error', e);
-        try { safeRemove(SESSION_FLAG_KEY); safeRemove('pin'); } catch {}
-        router.replace('/lock');
+        try { localStorage.removeItem('pin'); } catch {}
+        window.location.href = '/lock';
       }
     })();
     return () => { mounted = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // prepare fallback data from local cache so UI shows instantly
-  const fallbackHistory = useMemo(() => {
-    if (typeof window === 'undefined') return null;
-    return safeGetJSON<Tx[]>(HISTORY_CACHE_KEY);
-  }, []);
+  const fallbackHistory = useMemo(() => safeGetJSON<Tx[]>(HISTORY_CACHE_KEY), []);
+  const fallbackBalance = useMemo(() => safeGetJSON<number | { balance?: number }>(BALANCE_CACHE_KEY), []);
 
-  const fallbackBalance = useMemo(() => {
-    if (typeof window === 'undefined') return null;
-    return safeGetJSON<number | { balance?: number }>(BALANCE_CACHE_KEY);
-  }, []);
+  const historyKey = authorized ? '/api/history' : null;
+  const balanceKey = authorized ? '/api/balance' : null;
 
-  const historyKey = '/api/history';
-  const balanceKey = '/api/balance';
-
-  // Use SWR (SWRConfig is provided in root layout with sensible fetcher)
   const { data: historyData, error: historyError, isValidating: isHistoryValidating } = useSWR<Tx[]>(
-    authorized ? historyKey : null,
+    historyKey as any,
     { fallbackData: fallbackHistory ?? undefined, revalidateOnMount: true }
   );
 
   const { data: rawBalanceData, error: balanceError, isValidating: isBalanceValidating } = useSWR<any>(
-    authorized ? balanceKey : null,
+    balanceKey as any,
     { fallbackData: fallbackBalance ?? undefined, revalidateOnMount: true }
   );
 
-  // Normalize balance value (API may return { balance } or a number)
+  // prepare current ym
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const ym = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+  const monthShort = new Intl.DateTimeFormat('th-TH', { month: 'short' }).format(now);
+
+  // fetch monthly summary via SWR
+  const summaryKey = authorized ? `/api/summary?ym=${ym}` : null;
+  const { data: summaryData } = useSWR<any>(summaryKey as any, { revalidateOnMount: true });
+
+  // Normalize balance
   const balance: number | null = (() => {
     if (typeof rawBalanceData === 'number') return rawBalanceData;
     if (rawBalanceData && typeof rawBalanceData === 'object') {
@@ -132,64 +94,59 @@ export default function MainPage() {
     return null;
   })();
 
-  // Show central loader while SWR fetching initial data (or when no data yet)
+  // loader while fetching
   useEffect(() => {
     if (!authorized) return;
-    const loading =
-      Boolean(isHistoryValidating) ||
-      Boolean(isBalanceValidating) ||
-      (!historyData && typeof rawBalanceData === 'undefined');
-    if (loading) {
-      loader.show('กำลังโหลดข้อมูล...');
-    } else {
-      loader.hide();
-    }
+    const loading = Boolean(isHistoryValidating) || Boolean(isBalanceValidating) || (summaryKey && !summaryData);
+    if (loading) loader.show('กำลังโหลดข้อมูล...');
+    else loader.hide();
     return () => { loader.hide(true); };
-  }, [authorized, isHistoryValidating, isBalanceValidating, historyData, rawBalanceData, loader]);
+  }, [authorized, isHistoryValidating, isBalanceValidating, summaryData, loader, summaryKey]);
 
-  // Persist SWR results locally for faster subsequent loads
-  useEffect(() => {
-    if (historyData) {
-      try { safeSetJSON(HISTORY_CACHE_KEY, historyData.slice(0, 200)); } catch {}
-    }
-  }, [historyData]);
+  // persist caches
+  useEffect(() => { if (historyData) safeSetJSON(HISTORY_CACHE_KEY, historyData.slice(0, 200)); }, [historyData]);
+  useEffect(() => { if (typeof balance === 'number') safeSetJSON(BALANCE_CACHE_KEY, balance); }, [balance]);
 
   useEffect(() => {
-    if (typeof balance === 'number') {
-      try { safeSetJSON(BALANCE_CACHE_KEY, balance); } catch {}
-    }
-  }, [balance]);
-
-  // Combined error handling
-  useEffect(() => {
-    if (historyError || balanceError) {
-      console.warn('SWR fetch error', { historyError, balanceError });
-      setError('เกิดปัญหาในการดึงข้อมูล — ระบบจะพยายามโหลดใหม่เล็กน้อย');
-    } else {
-      setError(null);
-    }
+    if (historyError || balanceError) { console.warn('SWR fetch error', { historyError, balanceError }); setError('เกิดปัญหาในการดึงข้อมูล — ระบบจะพยายามโหลดใหม่เล็กน้อย'); }
+    else setError(null);
   }, [historyError, balanceError]);
 
-  // If auth not yet checked render nothing (avoids flicker)
   if (!authChecked) return null;
   if (!authorized) return null;
 
   const history = historyData ?? [];
-  // sort descending by time
   const sorted = [...(history || [])].sort((a, b) => (b.time || 0) - (a.time || 0));
   const recent = sorted.slice(0, 3);
-  const totals = (history || []).reduce((acc, tx) => {
-    if (tx.type === 'in') acc.in += Number(tx.amount || 0);
-    else acc.out += Number(tx.amount || 0);
-    return acc;
-  }, { in: 0, out: 0 });
+
+  // monthly totals: prefer summary (fast); fallback to compute from history if summary not available
+  const monthlyTotals = {
+    in: summaryData?.data?.in ?? (() => {
+      return (history || []).reduce((acc, tx) => {
+        if (!tx?.time) return acc;
+        const d = new Date(tx.time);
+        if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
+          if (tx.type === 'in') acc += Number(tx.amount || 0);
+        }
+        return acc;
+      }, 0);
+    })(),
+    out: summaryData?.data?.out ?? (() => {
+      return (history || []).reduce((acc, tx) => {
+        if (!tx?.time) return acc;
+        const d = new Date(tx.time);
+        if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
+          if (tx.type === 'out') acc += Number(tx.amount || 0);
+        }
+        return acc;
+      }, 0);
+    })(),
+  };
 
   function formatCurrency(n: number | null) {
     if (n === null) return '—';
     return `฿ ${n.toLocaleString()}`;
   }
-
-  // Format date in Thai: day month (short) and time HH:MM — omit year
   function formatDateThai(ts?: number) {
     if (!ts) return '';
     const d = new Date(ts);
@@ -220,13 +177,13 @@ export default function MainPage() {
 
           <div className="dashboard-summary-row" role="region" aria-label="สรุปรายรับรายจ่าย" style={{ marginTop: 12 }}>
             <div className="dashboard-summary in" aria-hidden>
-              + รายรับ
-              <div className="summary-value">{formatCurrency(totals.in)}</div>
+              + รายรับ {monthShort}
+              <div className="summary-value">{formatCurrency(monthlyTotals.in)}</div>
             </div>
 
             <div className="dashboard-summary out" aria-hidden>
-              − รายจ่าย
-              <div className="summary-value">{formatCurrency(totals.out)}</div>
+              − รายจ่าย {monthShort}
+              <div className="summary-value">{formatCurrency(monthlyTotals.out)}</div>
             </div>
           </div>
 

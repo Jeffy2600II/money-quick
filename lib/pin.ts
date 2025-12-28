@@ -17,7 +17,8 @@ export async function setPin(pin: string) {
 export async function checkPin(pin: string) {
   const hash = await redis.get < string > (PIN_KEY);
   if (!hash) return false;
-  return bcrypt.compareSync(pin, hash);
+  // use async compare to avoid blocking event loop
+  return await bcrypt.compare(pin, hash);
 }
 
 export async function hasPin() {
