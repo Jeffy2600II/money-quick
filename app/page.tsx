@@ -1,10 +1,13 @@
 'use client'
 import { useEffect, useState } from "react";
 import Balance from "../components/Balance";
+import { useLoader } from "../components/LoaderProvider";
+import '../styles/dashboard.css';
 
 type Tx = { type: 'in' | 'out' | string; amount: number; time: number };
 
 export default function MainPage() {
+  const loader = useLoader();
   const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState<number | null>(null);
   const [history, setHistory] = useState<Tx[]>([]);
@@ -12,14 +15,15 @@ export default function MainPage() {
 
   useEffect(() => {
     let mounted = true;
+
     async function load() {
       try {
-        setLoading(true);
+        // Show central loader (LoaderProvider ensures min duration behavior)
+        loader.show('กำลังโหลดหน้าหลัก...');
         const [bRes, hRes] = await Promise.all([
           fetch("/api/balance"),
           fetch("/api/history"),
         ]);
-
         if (!mounted) return;
 
         if (!bRes.ok) throw new Error('Failed to load balance');
@@ -33,14 +37,20 @@ export default function MainPage() {
       } catch (e) {
         setError("เกิดข้อผิดพลาดในการโหลดข้อมูล");
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          // hide central loader (allows LoaderProvider to respect minDuration)
+          loader.hide();
+          setLoading(false);
+        }
       }
     }
-    load();
-    return () => { mounted = false; };
+
+    // slight delay so loader show/hide feels smooth on fast loads
+    const t = window.setTimeout(() => { void load(); }, 80);
+    return () => { mounted = false; clearTimeout(t); loader.hide(true); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // compute summary (from fetched history)
   const recent = history.slice(0, 3);
   const totals = history.reduce(
     (acc, tx) => {
@@ -63,128 +73,104 @@ export default function MainPage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center bg-base px-4">
-      <div style={{ width: "100%", maxWidth: 640 }}>
-        {/* Brand / header (position:relative so settings icon can sit at top-right) */}
-        <div className="pin-top" />
-        <div className="pin-brand" style={{ marginBottom: 6, position: "relative" }}>
-          <div className="logo" aria-hidden>
-            <div className="logo-line1">Money</div>
-            <div className="logo-line2">quick</div>
+    <main className="dashboard-page">
+      <div className="dashboard-container">
+        <header className="dashboard-header">
+          <div className="brand">
+            <div className="logo">
+              <div className="logo-line1">Money</div>
+              <div className="logo-line2">quick</div>
+            </div>
+            <div className="pin-prompt">ภาพรวมบัญชี</div>
           </div>
-          <div className="pin-prompt" style={{ marginTop: 8, marginBottom: 6 }}>
-            ภาพรวมบัญชี
-          </div>
-          {/* Settings icon intentionally not shown here (moved to header in prior step) */}
-        </div>
 
-        {/* Balance card */}
-        <section
-          aria-labelledby="balance-heading"
-          style={{
-            background: "#fff",
-            borderRadius: 12,
-            padding: 16,
-            boxSizing: "border-box",
-            border: "1px solid rgba(15,23,42,0.06)",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <div id="balance-heading" style={{ color: "#6b7280", fontWeight: 600 }}>ยอดคงเหลือ</div>
-              <div style={{ marginTop: 8 }}>
-                {loading ? (
-                  <div style={{ height: 60, width: 260, background: "rgba(0,0,0,0.04)", borderRadius: 8 }} />
-                ) : (
-                  <Balance value={balance ?? 0} />
-                )}
+          <div className="header-actions">
+            <a href="/settings" className="icon-btn" aria-label="ตั้งค่า">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7z" fill="currentColor" />
+                <path d="M19.4 13.5a7.95 7.95 0 0 0 .06-1 7.95 7.95 0 0 0-.06-1l2.11-1.65a.5.5 0 0 0 .12-.65l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a8.12 8.12 0 0 0-1.73-1L14.5 2.5a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 0-.5.5L9.21 5.02c-.62.2-1.21.47-1.73.8l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.65L4.6 11.5c-.05.33-.08.66-.08 1s.03.67.08 1L2.49 15.15a.5.5 0 0 0-.12.65l2 3.46c.14.24.44.34.7.22l2.49-1c.52.33 1.11.6 1.73.8L9 21.5a.5.5 0 0 0 .5.5h4c.26 0 .48-.16.5-.41l.29-2.3c.62-.2 1.21-.47 1.73-.8l2.49 1c.26.12.56.02.7-.22l2-3.46a.5.5 0 0 0-.12-.65L19.4 13.5z" fill="currentColor" opacity="0.9" />
+              </svg>
+            </a>
+          </div>
+        </header>
+
+        <section className="dashboard-card">
+          <div className="balance-row">
+            <div className="balance-block">
+              <div className="muted">ยอดคงเหลือ</div>
+              <div className="balance-value">
+                {loading ? <div className="skeleton skeleton-balance" /> : <Balance value={balance ?? 0} />}
               </div>
-              <div style={{ color: "#6b7280", fontSize: 13, marginTop: 6 }}>
-                อัปเดตล่าสุด: {history.length ? formatTime(history[0].time) : "—"}
-              </div>
+              <div className="muted small">อัปเดตล่าสุด: {history.length ? formatTime(history[0].time) : "—"}</div>
             </div>
 
-            {/* Summary compact */}
-            <div style={{ minWidth: 160, display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ background: "rgba(4,153,111,0.06)", borderRadius: 10, padding: "10px 12px" }}>
-                <div style={{ fontSize: 12, color: "#6b7280" }}>รวมรายรับ</div>
-                <div style={{ fontWeight: 700, color: "#059669", marginTop: 6 }}>{formatCurrency(totals.in)}</div>
+            <div className="summary-grid">
+              <div className="summary-card in">
+                <div className="small muted">รวมรายรับ</div>
+                <div className="summary-value">{loading ? <div className="skeleton skeleton-line" /> : formatCurrency(totals.in)}</div>
               </div>
-              <div style={{ background: "rgba(239,68,68,0.06)", borderRadius: 10, padding: "10px 12px" }}>
-                <div style={{ fontSize: 12, color: "#6b7280" }}>รวมรายจ่าย</div>
-                <div style={{ fontWeight: 700, color: "#dc2626", marginTop: 6 }}>{formatCurrency(totals.out)}</div>
+              <div className="summary-card out">
+                <div className="small muted">รวมรายจ่าย</div>
+                <div className="summary-value">{loading ? <div className="skeleton skeleton-line" /> : formatCurrency(totals.out)}</div>
               </div>
             </div>
           </div>
 
-          {/* NOTE: action buttons removed from main page as requested */}
+          <div className="dashboard-actions">
+            <div className="note muted small">หากต้องการแก้ไขหรือสร้างรายการใหม่ ให้กดปุ่ม "+" ด้านล่าง</div>
+          </div>
         </section>
 
-        {/* Recent activity preview (no "ดูทั้งหมด" link) */}
-        <section style={{ marginTop: 18 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-            <h2 style={{ fontWeight: 700, fontSize: "1.05rem" }}>กิจกรรมล่าสุด</h2>
-            {/* removed "ดูทั้งหมด" link; history accessible from bottom nav */}
+        <section className="recent-section">
+          <div className="recent-header">
+            <h2>กิจกรรมล่าสุด</h2>
+            <div>
+              <a href="/history" className="link-button">ดูประวัติทั้งหมด</a>
+            </div>
           </div>
 
-          <div style={{ background: "#fff", border: "1px solid rgba(15,23,42,0.06)", borderRadius: 12, overflow: "hidden" }}>
+          <div className="recent-list">
             {loading ? (
-              <div style={{ padding: 12 }}>
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} style={{ display: "flex", gap: 12, alignItems: "center", padding: "10px 0", borderBottom: i < 2 ? "1px solid rgba(15,23,42,0.03)" : "none" }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(0,0,0,0.04)" }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ height: 12, background: "rgba(0,0,0,0.04)", width: "60%", borderRadius: 6 }} />
-                      <div style={{ height: 10, background: "rgba(0,0,0,0.03)", width: "30%", borderRadius: 6, marginTop: 8 }} />
-                    </div>
-                    <div style={{ width: 90, height: 14, background: "rgba(0,0,0,0.04)", borderRadius: 6 }} />
+              Array.from({ length: 3 }).map((_, i) => (
+                <div className="recent-item skeleton-row" key={i}>
+                  <div className="skeleton avatar" />
+                  <div className="skeleton-lines">
+                    <div className="skeleton skeleton-line short" />
+                    <div className="skeleton skeleton-line tiny" />
                   </div>
-                ))}
-              </div>
+                  <div className="skeleton skeleton-amount" />
+                </div>
+              ))
             ) : recent.length ? (
-              <div>
-                {recent.map((tx, idx) => (
-                  <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 12, borderBottom: idx < recent.length - 1 ? "1px solid rgba(15,23,42,0.03)" : "none" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <div style={{
-                        width: 44, height: 44, borderRadius: 10,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        background: tx.type === "in" ? "rgba(4,153,111,0.08)" : "rgba(239,68,68,0.08)",
-                        color: tx.type === "in" ? "var(--accent-strong)" : "var(--error)",
-                        fontWeight: 700
-                      }}>
-                        {tx.type === "in" ? "+" : "−"}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 700 }}>{tx.type === "in" ? "เงินเข้า" : "เงินออก"}</div>
-                        <div style={{ color: "#6b7280", fontSize: 13 }}>{formatTime(tx.time)}</div>
-                      </div>
-                    </div>
-
-                    <div style={{ fontWeight: 800, fontSize: "1rem", color: tx.type === "in" ? "#059669" : "#dc2626" }}>
-                      {tx.type === "in" ? "+" : "-"} ฿ {tx.amount.toLocaleString()}
-                    </div>
+              recent.map((tx, idx) => (
+                <div key={idx} className="recent-item">
+                  <div className={`avatar ${tx.type === 'in' ? 'in' : 'out'}`}>{tx.type === 'in' ? '+' : '−'}</div>
+                  <div className="recent-meta">
+                    <div className="recent-title">{tx.type === 'in' ? 'เงินเข้า' : 'เงินออก'}</div>
+                    <div className="muted small">{formatTime(tx.time)}</div>
                   </div>
-                ))}
-              </div>
+                  <div className={`recent-amount ${tx.type === 'in' ? 'in' : 'out'}`}>
+                    {tx.type === 'in' ? '+' : '-'} ฿ {tx.amount.toLocaleString()}
+                  </div>
+                </div>
+              ))
             ) : (
-              <div style={{ padding: 14, color: "#6b7280" }}>ยังไม่มีรายการ</div>
+              <div className="empty">ยังไม่มีรายการ</div>
             )}
           </div>
         </section>
 
-        {/* Info / notes */}
-        <section style={{ marginTop: 18 }}>
-          <div style={{ background: "#fff", border: "1px solid rgba(15,23,42,0.06)", borderRadius: 10, padding: 12, color: "#6b7280" }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>คำแนะนำ</div>
-            <ul style={{ paddingLeft: 18 }}>
-              <li>หน้านี้เป็นแดชบอร์ดสำหรับดูข้อมูลหลัก — หากต้องการแก้ไขหรือบันทึกรายการ ให้ไปที่หน้าจัดการ (ปุ่มล่างกลาง)</li>
-              <li>การตั้งค่า PIN และการเปลี่ยน PIN ย้ายไปอยู่ในหน้า ตั้งค่า (Settings)</li>
+        <section className="info-section">
+          <div className="info-card">
+            <div className="info-title">คำแนะนำ</div>
+            <ul>
+              <li>หน้านี้เป็นแดชบอร์ดสำหรับดูข้อมูลหลัก — ใช้ปุ่มด้านล่างเพื่อเพิ่มรายการ</li>
+              <li>การจัดการ PIN อยู่ในหน้า ตั้งค่า</li>
             </ul>
           </div>
         </section>
 
-        {error && <div style={{ color: "var(--error)", marginTop: 12 }}>{error}</div>}
+        {error && <div className="error-text">{error}</div>}
       </div>
     </main>
   );
