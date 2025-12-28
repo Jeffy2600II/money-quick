@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Balance from "../components/Balance";
 import { useLoader } from "../components/LoaderProvider";
 import * as pinClient from "../lib/pinClient";
@@ -8,9 +9,33 @@ import '../styles/dashboard.css';
 
 type Tx = { type: 'in' | 'out' | string; amount: number; time: number };
 
+/**
+ * Dashboard page
+ *
+ * Security-first behavior (fastest possible):
+ * - On mount perform immediate synchronous check of local session PIN.
+ *   - If no session PIN: quickly query server whether a PIN exists.
+ *     - If server reports no PIN -> redirect to /setup-pin
+ *     - If server reports PIN exists -> redirect to /lock
+ *   - If session PIN exists: verify it with server immediately.
+ *     - If invalid -> clear session and redirect to /lock
+ *     - If valid -> mark authorized and start loading dashboard data in background
+ *
+ * Implementation notes:
+ * - We deliberately avoid rendering the dashboard UI until authorization completes.
+ *   This keeps the UX fast: user is redirected immediately if not authorized,
+ *   or sees the dashboard only after successful auth.
+ * - All PIN checks are done via pinClient (which sends POST in body).
+ * - Data loading (balance/history) starts only after successful PIN verification,
+ *   but we don't add artificial delays.
+ */
+
 export default function MainPage() {
+  const router = useRouter();
   const loader = useLoader();
-  const [loading, setLoading] = useState(true);
+
+  const [authorized, setAuthorized] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const [balance, setBalance] = useState<number | null>(null);
   const [history, setHistory] = useState<Tx[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -18,86 +43,97 @@ export default function MainPage() {
   useEffect(() => {
     let mounted = true;
 
-    async function init() {
+    async function fastAuthAndLoad() {
       try {
-        // Start immediate: check whether PIN exists and session PIN validity.
-        loader.show('ตรวจสอบสิทธิ์...');
-        const has = await pinClient.hasPin();
-        if (!has.ok) {
-          // If API failed, treat as error and redirect to lock/setup for safety
-          loader.hide();
-          window.location.href = '/setup-pin';
-          return;
+        // 1) Check local session PIN synchronously
+        let localPin: string | null = null;
+        try {
+          localPin = window.localStorage.getItem('pin');
+        } catch {
+          localPin = null;
         }
-        if (!has.data?.exists) {
-          loader.hide();
-          window.location.href = '/setup-pin';
-          return;
-        }
-
-        const localPin = (() => {
-          try { return window.localStorage.getItem('pin'); } catch { return null; }
-        })();
 
         if (!localPin) {
-          loader.hide();
-          window.location.href = '/lock';
+          // No session PIN -> ask server whether a PIN is set at all.
+          // If server fails, treat conservatively and send to /lock (or /setup-pin)
+          const has = await pinClient.hasPin();
+          if (!has.ok) {
+            // If server error, route to lock so user can re-authenticate
+            router.replace('/lock');
+            return;
+          }
+          if (!has.data?.exists) {
+            router.replace('/setup-pin');
+            return;
+          }
+          // PIN exists but no local session -> go to lock
+          router.replace('/lock');
           return;
         }
 
-        loader.show('ยืนยัน PIN...');
+        // 2) We have a localPin -> verify it immediately with server
         const check = await pinClient.checkPin(localPin);
         if (!check.ok || !check.data?.ok) {
+          // invalid session pin -> clear and force lock
           try { window.localStorage.removeItem('pin'); } catch {}
-          loader.hide();
-          window.location.href = '/lock';
+          router.replace('/lock');
           return;
         }
 
-        // PIN OK -> load data immediately
-        loader.show('กำลังโหลดข้อมูล...');
-        const [bRes, hRes] = await Promise.all([
-          fetch("/api/balance"),
-          fetch("/api/history"),
-        ]);
-
+        // authorized: show dashboard and load data
         if (!mounted) return;
+        setAuthorized(true);
 
-        if (!bRes.ok) throw new Error('Failed to load balance');
-        if (!hRes.ok) throw new Error('Failed to load history');
+        // Load data as soon as authorized (do not block UI longer than necessary)
+        setLoadingData(true);
+        loader.show('กำลังโหลดข้อมูล...');
+        try {
+          const [bRes, hRes] = await Promise.all([fetch("/api/balance"), fetch("/api/history")]);
+          if (!mounted) return;
 
-        const bJson = await bRes.json();
-        const hJson = await hRes.json();
+          if (!bRes.ok) throw new Error('Failed to load balance');
+          if (!hRes.ok) throw new Error('Failed to load history');
 
-        setBalance(Number(bJson.balance ?? 0));
-        setHistory(Array.isArray(hJson) ? (hJson as Tx[]) : []);
-      } catch (e) {
-        console.error('MainPage init error:', e);
-        setError("เกิดข้อผิดพลาดในการโหลดข้อมูล กรุณาลองใหม่");
-        try { window.localStorage.removeItem('pin'); } catch {}
-      } finally {
-        if (mounted) {
-          loader.hide();
-          setLoading(false);
+          const bJson = await bRes.json();
+          const hJson = await hRes.json();
+
+          setBalance(Number(bJson.balance ?? 0));
+          setHistory(Array.isArray(hJson) ? (hJson as Tx[]) : []);
+        } finally {
+          if (mounted) {
+            loader.hide();
+            setLoadingData(false);
+          }
         }
+      } catch (e) {
+        console.error('Auth/load error:', e);
+        // On unexpected error, clear session and go to lock to avoid stuck state
+        try { window.localStorage.removeItem('pin'); } catch {}
+        // Minimal feedback then redirect
+        setError("เกิดข้อผิดพลาด ตรวจสอบสิทธิ์ล้มเหลว");
+        router.replace('/lock');
       }
     }
 
-    // Run init immediately (no artificial delay)
-    void init();
+    // Run immediately (no artificial delay)
+    void fastAuthAndLoad();
 
     return () => {
       mounted = false;
-      // make sure loader hidden when unmount
+      // ensure loader hidden when unmount
       loader.hide(true);
     };
+    // We intentionally leave router and loader out of deps to run this only on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sort by time desc and take recent 3
+  // If not authorized yet, render nothing (fast redirect will happen).
+  // This avoids flashing the dashboard to an unauthenticated user.
+  if (!authorized) return null;
+
+  // Authorized: render dashboard. loadingData indicates background fetch state.
   const sorted = [...history].sort((a, b) => (b.time || 0) - (a.time || 0));
   const recent = sorted.slice(0, 3);
-
   const totals = history.reduce(
     (acc, tx) => {
       if (tx.type === "in") acc.in += Number(tx.amount || 0);
@@ -122,7 +158,7 @@ export default function MainPage() {
 
   return (
     <>
-      <main className="dashboard-page" aria-busy={loading}>
+      <main className="dashboard-page" aria-busy={loadingData}>
         <div className="dashboard-container">
           <header className="dashboard-header">
             <div className="brand">
@@ -148,7 +184,7 @@ export default function MainPage() {
               <div className="balance-block">
                 <div className="muted">ยอดคงเหลือ</div>
                 <div className="balance-value">
-                  {loading ? <div className="skeleton skeleton-balance" /> : <Balance value={balance ?? 0} />}
+                  {loadingData ? <div className="skeleton skeleton-balance" /> : <Balance value={balance ?? 0} />}
                 </div>
                 <div className="muted small">อัปเดตล่าสุด: {sorted.length ? formatDateThai(sorted[0].time) : "—"}</div>
               </div>
@@ -156,11 +192,11 @@ export default function MainPage() {
               <div className="summary-grid">
                 <div className="summary-card in">
                   <div className="small muted">รวมรายรับ</div>
-                  <div className="summary-value">{loading ? <div className="skeleton skeleton-line" /> : formatCurrency(totals.in)}</div>
+                  <div className="summary-value">{loadingData ? <div className="skeleton skeleton-line" /> : formatCurrency(totals.in)}</div>
                 </div>
                 <div className="summary-card out">
                   <div className="small muted">รวมรายจ่าย</div>
-                  <div className="summary-value">{loading ? <div className="skeleton skeleton-line" /> : formatCurrency(totals.out)}</div>
+                  <div className="summary-value">{loadingData ? <div className="skeleton skeleton-line" /> : formatCurrency(totals.out)}</div>
                 </div>
               </div>
             </div>
@@ -179,7 +215,7 @@ export default function MainPage() {
             </div>
 
             <div className="recent-list">
-              {loading ? (
+              {loadingData ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <div className="recent-item skeleton-row" key={i}>
                     <div className="skeleton avatar" />
