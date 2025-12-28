@@ -1,6 +1,3 @@
-/* lib/upstash.ts
-   Small Upstash helper with timeout/retry and pipeline support.
-*/
 
 import { Redis } from '@upstash/redis';
 
@@ -11,6 +8,7 @@ type UpstashOptions = {
 
 /**
  * Ensure a single Redis client is reused across lambda invocations.
+ * This avoids overhead of recreating client on each invocation.
  */
 function getClient(): Redis {
   // @ts-ignore global augmentation
@@ -31,6 +29,7 @@ function getClient(): Redis {
 
 /**
  * Small helper: perform an Upstash operation with timeout and optional retries.
+ * We wrap client methods that return Promises.
  */
 async function withTimeoutAndRetry < T > (fn: () => Promise < T > , timeoutMs = 5000, retries = 1): Promise < T > {
   let attempt = 0;
@@ -40,6 +39,8 @@ async function withTimeoutAndRetry < T > (fn: () => Promise < T > , timeoutMs = 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
+      // Note: Upstash uses fetch internally; AbortController won't necessarily cancel it,
+      // but we still provide a timeout guard at JS level.
       const p = fn();
       const res = await Promise.race([
         p,
@@ -52,9 +53,9 @@ async function withTimeoutAndRetry < T > (fn: () => Promise < T > , timeoutMs = 
     } catch (e) {
       clearTimeout(timer);
       lastErr = e;
+      // small backoff before retry
       if (attempt <= retries) {
         const backoff = Math.min(200 * Math.pow(2, attempt), 1000);
-        // small jitter
         // eslint-disable-next-line no-await-in-loop
         await new Promise((r) => setTimeout(r, backoff + Math.random() * 80));
         continue;
@@ -97,6 +98,7 @@ export async function upstashSet(key: string, value: unknown, ttlSeconds ? : num
   const retries = opts?.retries ?? 1;
   const val = typeof value === 'string' ? value : JSON.stringify(value);
   if (typeof ttlSeconds === 'number') {
+    // setex style
     return withTimeoutAndRetry(() => client.set(key, val, { ex: ttlSeconds }) as Promise < any > , timeoutMs, retries);
   }
   return withTimeoutAndRetry(() => client.set(key, val) as Promise < any > , timeoutMs, retries);
@@ -112,31 +114,31 @@ export async function upstashDel(...keys: string[]) {
 
 /**
  * Multi-get (if client supports mget)
+ * Use this to reduce round-trips when fetching many keys.
  */
 export async function upstashMGet(keys: string[], opts ? : UpstashOptions) {
   const client = getClient();
-  return withTimeoutAndRetry(
-    () => (typeof(client as any).mget === 'function' ? (client as any).mget(keys) : Promise.all(keys.map(k => client.get(k)))) as Promise < any > ,
-    opts?.timeoutMs ?? 4000,
-    opts?.retries ?? 1
-  );
+  // Upstash redis has mget command
+  return withTimeoutAndRetry(() => (client.mget ? (client.mget(keys) as Promise < any[] > ) : Promise.all(keys.map(k => client.get(k)))) as Promise < any > , opts?.timeoutMs ?? 4000, opts?.retries ?? 1);
 }
 
 /**
  * Pipeline / multiple commands execution (when supported)
  * Example usage: pipeline([['set', key, val], ['expire', key, 60]])
+ * Note: Upstash library may not expose raw pipeline; if not, fallback to sequential or multi()
  */
 export async function upstashPipeline(commands: Array < [string, ...any[]] > , opts ? : UpstashOptions) {
   const client = getClient();
   const timeoutMs = opts?.timeoutMs ?? 4000;
   const retries = opts?.retries ?? 1;
   
-  // Try using `multi` if available (preferred)
+  // Try using `multi` if available
   // @ts-ignore
-  if (typeof(client as any).multi === 'function') {
+  if (typeof client.multi === 'function') {
     // client.multi().exec() style
+    // Build commands
     // @ts-ignore
-    const multi = (client as any).multi();
+    const multi = client.multi();
     for (const cmd of commands) {
       // @ts-ignore
       multi[cmd[0]](...cmd.slice(1));
@@ -152,32 +154,9 @@ export async function upstashPipeline(commands: Array < [string, ...any[]] > , o
     // @ts-ignore
     const fn = (client as any)[name];
     if (typeof fn === 'function') {
-      try {
-        // Special-case: allow "SET key value EX ttl" style commands by converting to set(key, value, { ex: ttl })
-        if (name.toLowerCase() === 'set' && args.length >= 3) {
-          // detect pattern [..., 'EX'|'ex', ttl] at the end (commonly used)
-          const lastButOne = args[args.length - 2];
-          const last = args[args.length - 1];
-          if ((lastButOne === 'EX' || lastButOne === 'ex') && (typeof last === 'number' || !Number.isNaN(Number(last)))) {
-            const key = args[0];
-            const val = args[1];
-            const ttl = Number(last);
-            // call client.set(key, val, { ex: ttl })
-            // eslint-disable-next-line no-await-in-loop
-            const r = await withTimeoutAndRetry(() => fn.apply(client, [key, val, { ex: ttl }]), timeoutMs, retries);
-            results.push(r);
-            continue;
-          }
-        }
-        
-        // fallback: call function with provided args
-        // eslint-disable-next-line no-await-in-loop
-        const r = await withTimeoutAndRetry(() => fn.apply(client, args), timeoutMs, retries);
-        results.push(r);
-      } catch (e) {
-        // push error object so caller can inspect; keep going for remaining commands
-        results.push({ error: String(e) });
-      }
+      // eslint-disable-next-line no-await-in-loop
+      const r = await withTimeoutAndRetry(() => fn.apply(client, args), timeoutMs, retries);
+      results.push(r);
     } else {
       results.push(null);
     }
