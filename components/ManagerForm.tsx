@@ -11,8 +11,7 @@ import { mutate } from 'swr';
 
 type TxForm = {
   type: 'in' | 'out';
-  amount: string; // keep as string while editing
-  datetime: string; // ISO 8601 local-like (from input)
+  amount: string; // editing as string
   category: string;
   note: string;
 };
@@ -20,7 +19,6 @@ type TxForm = {
 const DEFAULT: TxForm = {
   type: 'in',
   amount: '',
-  datetime: new Date().toISOString().slice(0, 16), // "YYYY-MM-DDTHH:mm"
   category: '',
   note: '',
 };
@@ -42,24 +40,15 @@ export default function ManagerForm() {
   }
   
   function parseAmount(s: string) {
-    // allow decimals (dot or comma)
     const normalized = s.replace(',', '.').trim();
     const n = Number(normalized);
     return Number.isFinite(n) ? n : NaN;
   }
   
   async function handleSubmit() {
-    // validation
     const amt = parseAmount(form.amount);
     if (!form.amount || Number.isNaN(amt) || amt <= 0) {
       popup.show('กรุณาใส่จำนวนเงินที่ถูกต้อง', { duration: 2500 });
-      return;
-    }
-    
-    // datetime -> timestamp
-    const ts = Date.parse(form.datetime);
-    if (!ts || Number.isNaN(ts)) {
-      popup.show('วันที่ไม่ถูกต้อง', { duration: 2500 });
       return;
     }
     
@@ -68,16 +57,13 @@ export default function ManagerForm() {
     try { pin = typeof window !== 'undefined' ? window.localStorage.getItem('pin') : null; } catch { pin = null; }
     if (!pin) {
       popup.show('คุณยังไม่ได้ตั้ง PIN — ไปที่หน้าเข้าสู่ระบบหรือตั้ง PIN', { duration: 2800 });
-      // redirect to lock/setup for safety
       setTimeout(() => { window.location.href = '/lock'; }, 600);
       return;
     }
     
-    // prepare body
     const body = {
       type: form.type,
       amount: amt,
-      time: ts,
       category: form.category || undefined,
       note: form.note || undefined,
       pin,
@@ -98,8 +84,8 @@ export default function ManagerForm() {
           mutate(`/api/summary?ym=${monthYm}`);
         } catch {}
         
-        // reset form
-        setForm({ ...DEFAULT, datetime: new Date().toISOString().slice(0, 16), type: form.type });
+        // reset form (keep type so user can enter multiple of same kind)
+        setForm({ ...DEFAULT, type: form.type });
       } else {
         loader.hide();
         popup.show(res.error || 'ไม่สามารถบันทึกรายการได้', { duration: 2400 });
@@ -110,7 +96,6 @@ export default function ManagerForm() {
       console.error('createTx error', e);
     } finally {
       setSubmitting(false);
-      // ensure loader hidden
       loader.hide(true);
     }
   }
@@ -139,18 +124,6 @@ export default function ManagerForm() {
             />
             <div className="mq-manager-currency">฿</div>
           </div>
-        </div>
-
-        <div className="mq-manager-row">
-          <label className="label">วันที่ & เวลา</label>
-          <input
-            type="datetime-local"
-            value={form.datetime}
-            onChange={(e) => update('datetime', e.target.value)}
-            className="mq-manager-input"
-            disabled={submitting}
-            aria-label="วันที่และเวลา"
-          />
         </div>
 
         <div className="mq-manager-row">
