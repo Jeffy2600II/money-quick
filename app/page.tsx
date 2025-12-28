@@ -4,77 +4,114 @@ import { useRouter } from "next/navigation";
 import Balance from "../components/Balance";
 import BottomNav from "../components/BottomNav";
 import '../styles/dashboard.css';
+import * as pinClient from "../lib/pinClient";
 
-type Tx = { type: 'in' | 'out' | string; amount: number; time: number };
+type Tx = { type: 'in' | 'out' | string;amount: number;time: number };
 
 /**
- * Dashboard (fast local auth)
+ * Fast-auth dashboard using a short-lived client session flag.
  *
- * Auth behaviour:
- * - Only check browser-stored session info (localStorage). No server-side PIN check here to keep auth instant.
- * - If a local PIN exists and (optionally) a stored expiry hasn't passed -> treat as authorized.
- * - If no local PIN (or expired) -> redirect immediately to /lock so user can enter PIN (or /setup-pin flows).
+ * Strategy:
+ * - Synchronous, local check first: read `session_valid` from localStorage and verify expiry.
+ *   If valid -> mark authorized immediately (no network) so UI appears fast.
+ * - If no valid session flag but local `pin` exists, verify it once with server (as now),
+ *   then set session flag for next visits to be instant.
+ * - If neither session nor pin -> redirect to /lock immediately.
  *
  * Notes:
- * - This makes the initial auth/redirect extremely fast because it avoids DB calls.
- * - Sensitive operations that change data should still be validated server-side (server must re-check PIN for critical writes).
+ * - We keep existing server-side checks for sensitive writes (server must re-verify PIN there).
+ * - Session duration short by default (5 minutes) — controlled at login (Lock page).
  */
+const SESSION_FLAG_KEY = 'session_valid';
 
 export default function MainPage() {
   const router = useRouter();
-
+  
   const [authChecked, setAuthChecked] = useState(false);
   const [authorized, setAuthorized] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
-  const [balance, setBalance] = useState<number | null>(null);
-  const [history, setHistory] = useState<Tx[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
+  const [balance, setBalance] = useState < number | null > (null);
+  const [history, setHistory] = useState < Tx[] > ([]);
+  const [error, setError] = useState < string | null > (null);
+  
   useEffect(() => {
     let mounted = true;
-
+    
     async function init() {
       try {
-        // 1) QUICK local-session check (synchronous-ish)
+        // 0) synchronous local session check (fast path)
+        try {
+          const raw = window.localStorage.getItem(SESSION_FLAG_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw) as { expires: number } | null;
+            if (parsed && parsed.expires && Date.now() < parsed.expires) {
+              // immediate authorized
+              setAuthorized(true);
+            } else {
+              // expired flag -> clean up
+              try { window.localStorage.removeItem(SESSION_FLAG_KEY); } catch {}
+            }
+          }
+        } catch (e) {
+          // ignore localStorage parse errors and continue to fallback
+        }
+        
+        // If authorized by session flag -> load data immediately (no PIN recheck)
+        if (authorized) {
+          // load data
+          setLoadingData(true);
+          try {
+            const [bRes, hRes] = await Promise.all([fetch("/api/balance"), fetch("/api/history")]);
+            if (!mounted) return;
+            if (!bRes.ok || !hRes.ok) throw new Error('Failed to load data');
+            const bJson = await bRes.json();
+            const hJson = await hRes.json();
+            setBalance(Number(bJson.balance ?? 0));
+            setHistory(Array.isArray(hJson) ? (hJson as Tx[]) : []);
+          } catch (e) {
+            console.error('Data load error', e);
+            setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+          } finally {
+            if (mounted) setLoadingData(false);
+            if (mounted) setAuthChecked(true);
+          }
+          return;
+        }
+        
+        // 1) no valid session flag -> try fast fallback: if localPin exists, verify once and set session flag
         let localPin: string | null = null;
         try { localPin = window.localStorage.getItem('pin'); } catch { localPin = null; }
-
-        // Optional expiry support: if you set 'pin_expires_at' (ms epoch), respect it
-        if (localPin) {
-          try {
-            const expiry = window.localStorage.getItem('pin_expires_at');
-            if (expiry) {
-              const ts = Number(expiry);
-              if (!Number.isNaN(ts) && ts > 0 && Date.now() > ts) {
-                // expired
-                try { window.localStorage.removeItem('pin'); window.localStorage.removeItem('pin_expires_at'); } catch {}
-                router.replace('/lock');
-                return;
-              }
-            }
-          } catch {}
-          // treat as authorized (fast)
-          setAuthorized(true);
-        } else {
-          // no local session -> go to lock (lock handles forgot/setup flows)
+        
+        if (!localPin) {
+          // no local credentials -> go to lock immediately
           router.replace('/lock');
           return;
         }
-
-        // 2) Authorized locally -> load server data (balance / history)
-        if (!mounted) return;
+        
+        // verify local pin with server (single request)
+        const check = await pinClient.checkPin(localPin);
+        if (!check.ok || !check.data?.ok) {
+          // invalid -> remove local pin and redirect to lock
+          try { window.localStorage.removeItem('pin'); } catch {}
+          router.replace('/lock');
+          return;
+        }
+        
+        // successful verification -> set session flag (so future visits are instant)
+        try {
+          const SESSION_MS = 5 * 60 * 1000; // 5 minutes (tunable)
+          window.localStorage.setItem(SESSION_FLAG_KEY, JSON.stringify({ expires: Date.now() + SESSION_MS }));
+        } catch {}
+        
+        // authorized now, load data
+        setAuthorized(true);
         setLoadingData(true);
         try {
           const [bRes, hRes] = await Promise.all([fetch("/api/balance"), fetch("/api/history")]);
           if (!mounted) return;
-
-          if (!bRes.ok || !hRes.ok) {
-            throw new Error('Failed to load data');
-          }
-
+          if (!bRes.ok || !hRes.ok) throw new Error('Failed to load data');
           const bJson = await bRes.json();
           const hJson = await hRes.json();
-
           setBalance(Number(bJson.balance ?? 0));
           setHistory(Array.isArray(hJson) ? (hJson as Tx[]) : []);
         } catch (e) {
@@ -82,30 +119,29 @@ export default function MainPage() {
           setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
         } finally {
           if (mounted) setLoadingData(false);
+          if (mounted) setAuthChecked(true);
         }
       } catch (e) {
-        console.error('Init error', e);
-        // fallback: clear any local pin and go to lock
-        try { window.localStorage.removeItem('pin'); window.localStorage.removeItem('pin_expires_at'); } catch {}
+        console.error('Auth flow error', e);
+        try { window.localStorage.removeItem('pin');
+          window.localStorage.removeItem(SESSION_FLAG_KEY); } catch {}
         router.replace('/lock');
-      } finally {
-        if (mounted) setAuthChecked(true);
       }
     }
-
-    // run immediately, no artificial delay
+    
+    // run immediately
     void init();
-
+    
     return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // If auth not yet checked, render nothing so redirects happen instantly (no flicker).
+  }, [authorized, router]);
+  
+  // If auth hasn't been checked -> render nothing to allow immediate redirect (no flicker)
   if (!authChecked) return null;
-
-  // If not authorized, we've redirected — fallback no render.
+  
+  // If not authorized we already redirected -> nothing to render
   if (!authorized) return null;
-
+  
   // Authorized: render dashboard
   const sorted = [...history].sort((a, b) => (b.time || 0) - (a.time || 0));
   const recent = sorted.slice(0, 3);
@@ -114,23 +150,22 @@ export default function MainPage() {
       if (tx.type === "in") acc.in += Number(tx.amount || 0);
       else acc.out += Number(tx.amount || 0);
       return acc;
-    },
-    { in: 0, out: 0 }
+    }, { in: 0, out: 0 }
   );
-
+  
   function formatCurrency(n: number | null) {
     if (n === null) return "—";
     return `฿ ${n.toLocaleString()}`;
   }
-
-  function formatDateThai(ts?: number) {
+  
+  function formatDateThai(ts ? : number) {
     if (!ts) return "";
     const d = new Date(ts);
     const datePart = new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short' }).format(d);
     const timePart = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
     return `${datePart} ${timePart}`;
   }
-
+  
   return (
     <>
       <main className="dashboard-page" aria-busy={loadingData}>
