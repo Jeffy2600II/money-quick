@@ -12,15 +12,11 @@ import { mutate } from 'swr';
 type TxForm = {
   type: 'in' | 'out';
   amount: string; // editing as string
-  category: string;
-  note: string;
 };
 
 const DEFAULT: TxForm = {
   type: 'in',
   amount: '',
-  category: '',
-  note: '',
 };
 
 export default function ManagerForm() {
@@ -64,8 +60,6 @@ export default function ManagerForm() {
     const body = {
       type: form.type,
       amount: amt,
-      category: form.category || undefined,
-      note: form.note || undefined,
       pin,
     };
     
@@ -124,30 +118,6 @@ export default function ManagerForm() {
             />
             <div className="mq-manager-currency">฿</div>
           </div>
-        </div>
-
-        <div className="mq-manager-row">
-          <label className="label">หมวดหมู่ (ไม่บังคับ)</label>
-          <input
-            type="text"
-            value={form.category}
-            onChange={(e) => update('category', e.target.value)}
-            className="mq-manager-input"
-            placeholder="ค่าอาหาร, ค่าน้ำมัน, เงินเดือน..."
-            disabled={submitting}
-          />
-        </div>
-
-        <div className="mq-manager-row">
-          <label className="label">หมายเหตุ (ไม่บังคับ)</label>
-          <input
-            type="text"
-            value={form.note}
-            onChange={(e) => update('note', e.target.value)}
-            className="mq-manager-input"
-            placeholder="เช่น ซื้อของที่ร้าน A"
-            disabled={submitting}
-          />
         </div>
 
         <div className="mq-manager-actions">

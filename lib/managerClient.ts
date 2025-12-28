@@ -1,9 +1,8 @@
 // Simple client wrapper for creating transactions (server assigns time)
+// Note: do NOT send category/note to server for now.
 export async function createTx(body: {
   type: 'in' | 'out';
   amount: number;
-  category ? : string;
-  note ? : string;
   pin ? : string | null;
 }) {
   try {

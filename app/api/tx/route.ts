@@ -13,10 +13,9 @@ function secondsUntilMonthEnd(ts = Date.now()) {
 
 export async function POST(req: Request) {
   try {
-    // accept category/note but ignore any client-sent time — server uses Date.now()
-    const { type, amount, pin, category, note } = await req.json();
+    const { type, amount, pin } = await req.json();
 
-    // validation & auth
+    // validation
     if (!await checkPin(pin)) return new Response("Unauthorized", { status: 401 });
     if ((type !== "in" && type !== "out") || typeof amount !== "number" || amount <= 0) {
       return new Response("Bad Request", { status: 400 });
@@ -36,22 +35,23 @@ export async function POST(req: Request) {
         }
       }
     } catch (e) {
+      // fallback to 0 if read fails — pipeline will still attempt writes
       console.warn("upstashGet balance failed, fallback to 0", e);
     }
 
     const newBalance = type === "in" ? currentBalance + amount : currentBalance - amount;
     const ttl = Math.max(1, Math.floor(secondsUntilMonthEnd(time)));
 
-    // include category & note in stored tx
-    const tx = { type, amount, time, category: category ?? null, note: note ?? null };
+    const tx = { type, amount, time };
 
-    // monthly summary key
+    // monthly summary key (durable)
     const d = new Date(time);
     const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; // e.g. 2025-12
     const summaryKey = `summary:${ym}`;
     const summaryField = type === "in" ? "in" : "out";
 
     try {
+      // pipeline: set balance, set tx with EX, hincrbyfloat summary
       await upstashPipeline(
         [
           ["set", "balance", String(newBalance)],
@@ -65,8 +65,7 @@ export async function POST(req: Request) {
       return new Response("Internal server error", { status: 500 });
     }
 
-    // return newBalance and saved tx for client convenience
-    return Response.json({ newBalance, tx });
+    return Response.json({ newBalance });
   } catch (err: any) {
     console.error("tx handler error:", err);
     return new Response("Internal server error", { status: 500 });
