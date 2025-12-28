@@ -1,10 +1,12 @@
 /* Dashboard — Redesigned for better space, clear direction and horizontal efficiency
-   - Lighter, airier spacing (especially on mobile)
-   - Column direction similar to PIN pages: clear top brand -> balance -> actions -> list
-   - Minimal shadows; active interactions scale to 0.98 for tactile feedback
-   - Avoid wide horizontal padding on mobile; allow content to use full width
+   - Adjusted to remove inline income/outcome numbers (moved to manage page)
+   - Fast-loading UX: skeletons for balance & history, optimistic updates handled in page logic
+   - Recent header: "รายการล่าสุด" + "ดูประวัติทั้งหมด" aligned horizontally
+   - Removed link to manage (center FAB exists)
+   - Minimal active scaling (0.98) and very light borders; little/no heavy shadow
 */
 
+/* Base layout */
 .dashboard-page {
   min-height: 100vh;
   padding: 0;
@@ -19,12 +21,12 @@
 /* Column wrapper centers page but allows horizontal use on mobile */
 .dashboard-vertical {
   width: 100%;
-  max-width: 640px; /* use available horizontal space on wide screens */
+  max-width: 640px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  padding: 20px 12px 96px; /* small horizontal padding, comfortable bottom space for bottom-nav */
+  padding: 20px 12px 96px;
   box-sizing: border-box;
 }
 
@@ -45,7 +47,7 @@
   margin-top: 6px;
 }
 
-/* Balance block — prominent, airy */
+/* Balance block */
 .dashboard-balance {
   width: 100%;
   text-align: center;
@@ -54,7 +56,7 @@
   box-sizing: border-box;
 }
 
-/* Summary row — full width, split in two but compact on small screens */
+/* Summary row: labels only (numbers now live in manage page) */
 .dashboard-summary-row {
   display: flex;
   width: 100%;
@@ -77,9 +79,7 @@
 .dashboard-summary.in { color: #04996f; background: rgba(4,153,111,0.06); }
 .dashboard-summary.out { color: #dc2626; background: rgba(239,68,68,0.06); }
 
-.summary-value { font-weight: 800; margin-top: 6px; font-size: 1rem; }
-
-/* Controls: input + button row */
+/* Controls: input + button */
 .add-amount-input {
   width: 100%;
   box-sizing: border-box;
@@ -106,17 +106,38 @@
   transform: none;
 }
 
+/* Recent header: title + view-all aligned horizontally */
+.recent-header {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+.recent-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--neutral-800);
+}
+.view-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  text-decoration: none;
+  background: transparent;
+  color: var(--accent-strong, #04996f);
+  font-weight: 700;
+  border: 1px solid rgba(4,153,111,0.08);
+  transition: transform 120ms ease, background 120ms ease;
+}
+.view-all-btn:active { transform: scale(0.98); }
+
 /* Recent list */
 .dashboard-recent {
   width: 100%;
-  margin-top: 18px;
-}
-.dashboard-recent h3 {
-  text-align: left;
-  font-size: 1rem;
-  color: var(--muted);
-  margin: 4px 0 8px;
-  font-weight: 700;
 }
 .dashboard-recent-list {
   width: 100%;
@@ -164,6 +185,26 @@
 .muted { color: var(--muted); font-size: 0.92rem; }
 .small { font-size: 0.86rem; }
 
+/* Skeleton utilities (lightweight) */
+.skeleton {
+  background: linear-gradient(90deg, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0.04) 50%, rgba(0,0,0,0.06) 100%);
+  background-size: 200% 100%;
+  animation: mq-shimmer 900ms linear infinite;
+  border-radius: 6px;
+}
+@keyframes mq-shimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
+
+.skeleton-balance {
+  height: 56px;
+  width: 260px;
+  margin: 8px auto;
+  border-radius: 10px;
+}
+.skeleton-line { height: 12px; width: 100%; border-radius: 6px; }
+.skeleton-line.short { width: 60%; }
+.skeleton-avatar { width: 40px; height: 40px; border-radius: 10px; }
+.skeleton-amount { width: 80px; height: 14px; border-radius: 6px; }
+
 /* Responsive adjustments */
 @media (max-width: 560px) {
   .dashboard-vertical {
@@ -178,7 +219,7 @@
   .dashboard-recent-amount { min-width: 64px; font-size: 0.95rem; }
 }
 
-/* Desktop: utilize horizontal space effectively while keeping the same vertical flow */
+/* Desktop: use horizontal space efficiently but maintain vertical reading flow */
 @media (min-width: 900px) {
   .dashboard-vertical {
     max-width: 900px;
