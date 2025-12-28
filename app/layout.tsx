@@ -1,4 +1,5 @@
 'use client';
+import '../styles/modern-styles.min.css'; // moved here (styles folder)
 import '../styles/globals.css';
 import PopupProvider from '../components/PopupProvider';
 import LoaderProvider from '../components/LoaderProvider';
