@@ -239,7 +239,7 @@ export default function MainPage() {
           </section>
 
           {/* Recent header: title left, history link right (same baseline) */}
-          <div className="dashboard-recent-header" style={{ width: '100%', marginTop: 18 }}>
+          <div className="dashboard-recent-header" style={{ width: '100%', marginTop: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--muted)', fontWeight: 700 }}>กิจกรรมล่าสุด</h3>
             <PrefetchOnHover href="/history">
               <a className="history-link" style={{ textDecoration: 'none' }}>ดูประวัติทั้งหมด</a>
