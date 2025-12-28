@@ -7,37 +7,43 @@ import ServiceWorkerRegister from '../components/ServiceWorkerRegister';
 import { SWRConfig } from 'swr';
 import { fetchWithTimeout } from '../lib/fetcher';
 
+/**
+ * RootLayout with an inline optimistic auth check that runs as early as possible.
+ * - Fast path: if no local session PIN -> redirect to /lock immediately.
+ * - If local PIN exists -> reveal page immediately (optimistic) and verify in background.
+ *   If verification fails, remove local PIN and redirect to /lock.
+ *
+ * Notes:
+ * - Pages that should skip auth (e.g. /lock, /setup-pin, /api) are excluded.
+ * - This approach prioritizes perceived speed while keeping the security flow intact.
+ */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  // Inline script runs as early as possible in <head> to check localStorage pin and redirect fast.
-  // It hides page until check completes (only for pages where check is applicable).
   const inlineAuthScript = `
   (function(){
     try {
       var path = location.pathname || '/';
-      // pages to skip (lock/setup pages and API routes)
       var skipPrefixes = ['/lock','/setup-pin','/change-pin','/settings','/api','/sw.js','/_next'];
       for (var i=0;i<skipPrefixes.length;i++){
         if (path.indexOf(skipPrefixes[i]) === 0) {
-          // ensure page visible on skipped pages
+          // Skip auth check for these paths
           try { document.documentElement.style.visibility = 'visible'; } catch(e){}
           return;
         }
       }
 
-      // Hide document immediately to avoid flashing content before auth completes
-      try { document.documentElement.style.visibility = 'hidden'; } catch(e){}
-
+      // Protected page: quick local check
       var pin = null;
       try { pin = localStorage.getItem('pin'); } catch(e){ pin = null; }
 
       if (!pin) {
-        // no local session -> redirect to lock quickly
-        try { location.replace('/lock'); } catch(e){ }
+        // No local session -> immediate redirect to lock
+        try { location.replace('/lock'); } catch(e){}
         return;
       }
 
-      // verify pin with backend asynchronously
-      // Use fetch; don't block on response, but redirect to /lock if invalid.
+      // Optimistic reveal for speed; background verification will enforce correctness
+      try { document.documentElement.style.visibility = 'visible'; } catch(e){}
+
       fetch('/api/pin-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -47,7 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       }).then(function(res){
         if (!res.ok) {
           try { localStorage.removeItem('pin'); } catch(e){}
-          location.replace('/lock');
+          try { location.replace('/lock'); } catch(e){}
           return;
         }
         return res.json();
@@ -55,16 +61,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         if (!json || !json.ok || !json.data || !json.data.ok) {
           try { localStorage.removeItem('pin'); } catch(e){}
           try { location.replace('/lock'); } catch(e){}
-          return;
         }
-        // success -> reveal page
-        try { document.documentElement.style.visibility = 'visible'; } catch(e){}
-      }).catch(function(err){
-        // On network error: reveal page so user can see UI; optionally we could redirect.
-        try { document.documentElement.style.visibility = 'visible'; } catch(e){}
+      }).catch(function(){
+        // network error: keep page visible (so user can continue offline); do not force redirect
       });
 
-    } catch(e){
+    } catch(e) {
       try { document.documentElement.style.visibility = 'visible'; } catch(e){}
     }
   })();
@@ -81,8 +83,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <LoaderProvider>
               {children}
               <ServiceWorkerRegister />
-              {/* BottomNav intentionally removed from global layout.
-                  Pages that require the bottom navigation (e.g. dashboard) should render it themselves. */}
+              {/* BottomNav intentionally not rendered globally — pages that need it should render it themselves */}
             </LoaderProvider>
           </PopupProvider>
         </SWRConfig>
