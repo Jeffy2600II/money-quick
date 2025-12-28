@@ -10,13 +10,13 @@ import '../styles/dashboard.css';
 type Tx = { type: 'in' | 'out' | string; amount: number; time: number };
 
 /**
- * Dashboard page with fast auth + visible auth loader.
+ * Dashboard page — authentication uses only LoaderProvider overlay (no custom UI).
+ * While auth is pending we render nothing (loader overlay shown by LoaderProvider).
  */
 export default function MainPage() {
   const router = useRouter();
   const loader = useLoader();
 
-  const [authPending, setAuthPending] = useState(true); // true until authorization completes (success or redirect)
   const [authorized, setAuthorized] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [balance, setBalance] = useState<number | null>(null);
@@ -28,18 +28,17 @@ export default function MainPage() {
 
     async function fastAuthAndLoad() {
       try {
-        // show central loader immediately for consistent UX
+        // Use central loader only
         loader.show('กำลังตรวจสอบสิทธิ์...');
-        // 1) quick check local session PIN
+
+        // 1) Check local session PIN quickly
         let localPin: string | null = null;
         try { localPin = window.localStorage.getItem('pin'); } catch { localPin = null; }
 
         if (!localPin) {
-          // Ask server whether a PIN exists
           const has = await pinClient.hasPin();
           loader.hide();
           if (!has.ok) {
-            // server error -> go to lock to force auth
             router.replace('/lock');
             return;
           }
@@ -51,7 +50,7 @@ export default function MainPage() {
           return;
         }
 
-        // 2) verify localPin with server immediately
+        // 2) Verify localPin with server
         const check = await pinClient.checkPin(localPin);
         if (!check.ok || !check.data?.ok) {
           try { window.localStorage.removeItem('pin'); } catch {}
@@ -63,18 +62,15 @@ export default function MainPage() {
         // authorized
         if (!mounted) return;
         setAuthorized(true);
-        setAuthPending(false);
 
-        // load dashboard data
+        // load data
         setLoadingData(true);
         loader.show('กำลังโหลดข้อมูล...');
         try {
           const [bRes, hRes] = await Promise.all([fetch("/api/balance"), fetch("/api/history")]);
           if (!mounted) return;
 
-          if (!bRes.ok || !hRes.ok) {
-            throw new Error('Failed to load data');
-          }
+          if (!bRes.ok || !hRes.ok) throw new Error('Failed to load data');
 
           const bJson = await bRes.json();
           const hJson = await hRes.json();
@@ -90,18 +86,12 @@ export default function MainPage() {
       } catch (e) {
         console.error('Auth/load error:', e);
         try { window.localStorage.removeItem('pin'); } catch {}
-        setError('เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์');
         loader.hide();
-        // routing to lock as safe default
+        setError('เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์');
         router.replace('/lock');
-      } finally {
-        if (mounted) {
-          setAuthPending(false);
-        }
       }
     }
 
-    // Run immediately
     void fastAuthAndLoad();
 
     return () => {
@@ -111,42 +101,10 @@ export default function MainPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // While auth pending, show a lightweight auth loader UI (so user doesn't see blank screen)
-  if (authPending) {
-    return (
-      <div style={{
-        position: 'fixed',
-        inset: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#ffffff',
-        zIndex: 20000,
-      }}>
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 12,
-          alignItems: 'center',
-          padding: 18,
-          borderRadius: 12,
-          boxShadow: '0 10px 30px rgba(2,6,23,0.06)',
-          border: '1px solid rgba(15,23,42,0.06)',
-          background: '#fff'
-        }}>
-          <div style={{ fontWeight: 800, fontSize: 20 }}>Moneyquick</div>
-          <div style={{ width: 48, height: 48, borderRadius: 9999, border: '4px solid rgba(0,0,0,0.08)', borderTopColor: 'var(--accent, #00c48a)', animation: 'spin 900ms linear infinite' }} />
-          <div style={{ color: 'var(--neutral-500, #6b7280)', fontWeight: 700 }}>กำลังตรวจสอบสิทธิ์...</div>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        </div>
-      </div>
-    );
-  }
-
-  // If not authorized we already redirected; render nothing as fallback
+  // While authorization hasn't completed or user is being redirected, render nothing.
   if (!authorized) return null;
 
-  // Authorized: render dashboard normally
+  // Authorized: render dashboard
   const sorted = [...history].sort((a, b) => (b.time || 0) - (a.time || 0));
   const recent = sorted.slice(0, 3);
   const totals = history.reduce(
@@ -274,7 +232,6 @@ export default function MainPage() {
         </div>
       </main>
 
-      {/* Bottom navigation only present on dashboard page */}
       <BottomNav />
     </>
   );
