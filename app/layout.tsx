@@ -5,6 +5,7 @@ import LoaderProvider from '../components/LoaderProvider';
 import ServiceWorkerRegister from '../components/ServiceWorkerRegister';
 import { SWRConfig } from 'swr';
 import { fetchWithTimeout } from '../lib/fetcher';
+import BottomNav from '../components/BottomNav';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,7 +13,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         {/* If you have a dedicated API hostname, consider adding preconnect here:
             <link rel="preconnect" href="https://api.example.com" />
-            (left out because origin may be same)
         */}
       </head>
       <body>
@@ -21,6 +21,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <LoaderProvider>
               {children}
               <ServiceWorkerRegister />
+              {/* Bottom navigation stays fixed across the app */}
+              <BottomNav />
             </LoaderProvider>
           </PopupProvider>
         </SWRConfig>

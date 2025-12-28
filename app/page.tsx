@@ -66,9 +66,9 @@ export default function MainPage() {
   return (
     <main className="min-h-screen flex flex-col items-center bg-base px-4">
       <div style={{ width: "100%", maxWidth: 640 }}>
-        {/* Brand / header */}
+        {/* Brand / header (position:relative so settings icon can sit at top-right) */}
         <div className="pin-top" />
-        <div className="pin-brand" style={{ marginBottom: 6 }}>
+        <div className="pin-brand" style={{ marginBottom: 6, position: "relative" }}>
           <div className="logo" aria-hidden>
             <div className="logo-line1">Money</div>
             <div className="logo-line2">quick</div>
@@ -76,6 +76,15 @@ export default function MainPage() {
           <div className="pin-prompt" style={{ marginTop: 8, marginBottom: 6 }}>
             ภาพรวมบัญชี
           </div>
+
+          {/* Settings icon (top-right of header area) */}
+          <a href="/settings" aria-label="ตั้งค่า" className="header-settings">
+            {/* Gear icon (SVG embedded) */}
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7z" fill="currentColor" />
+              <path d="M19.4 13.5a7.95 7.95 0 0 0 .06-1 7.95 7.95 0 0 0-.06-1l2.11-1.65a.5.5 0 0 0 .12-.65l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a8.12 8.12 0 0 0-1.73-1L14.5 2.5a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 0-.5.5L9.21 5.02c-.62.2-1.21.47-1.73.8l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.65L4.6 11.5c-.05.33-.08.66-.08 1s.03.67.08 1L2.49 15.15a.5.5 0 0 0-.12.65l2 3.46c.14.24.44.34.7.22l2.49-1c.52.33 1.11.6 1.73.8L9 21.5a.5.5 0 0 0 .5.5h4c.26 0 .48-.16.5-.41l.29-2.3c.62-.2 1.21-.47 1.73-.8l2.49 1c.26.12.56.02.7-.22l2-3.46a.5.5 0 0 0-.12-.65L19.4 13.5z" fill="currentColor" opacity="0.9" />
+            </svg>
+          </a>
         </div>
 
         {/* Balance card */}
@@ -191,7 +200,7 @@ export default function MainPage() {
           <div style={{ background: "#fff", border: "1px solid rgba(15,23,42,0.06)", borderRadius: 10, padding: 12, color: "#6b7280" }}>
             <div style={{ fontWeight: 700, marginBottom: 8 }}>คำแนะนำ</div>
             <ul style={{ paddingLeft: 18 }}>
-              <li>หน้านี้เป็นแดชบอร์ดสำหรับดูข้อมูลหลัก — หากต้องการแก้ไขหรือบันทึกรายการ ให้ไปที่หน้าจัดการ (ปุ่มลอยด้านล่าง)</li>
+              <li>หน้านี้เป็นแดชบอร์ดสำหรับดูข้อมูลหลัก — หากต้องการแก้ไขหรือบันทึกรายการ ให้ไปที่หน้าจัดการ (ปุ่มล่างกลาง)</li>
               <li>ปุ่มตั้งค่า/เปลี่ยน PIN นำไปยังหน้าที่เกี่ยวข้องสำหรับการจัดการรหัส</li>
               <li>ออกแบบสอดคล้องกับ UI ของหน้าล็อก (สี ตัวหนา ขนาด จุด PIN) เพื่อความต่อเนื่องของแบรนด์</li>
             </ul>
@@ -200,31 +209,6 @@ export default function MainPage() {
 
         {error && <div style={{ color: "var(--error)", marginTop: 12 }}>{error}</div>}
       </div>
-
-      {/* Floating action button (ไปยังหน้าจัดการ รายรับ/รายจ่าย) */}
-      <a
-        href="/manage"
-        aria-label="จัดการรายรับรายจ่าย"
-        style={{
-          position: "fixed",
-          right: 18,
-          bottom: 20,
-          width: 64,
-          height: 64,
-          borderRadius: 9999,
-          background: "var(--accent)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#fff",
-          fontSize: 22,
-          fontWeight: 800,
-          textDecoration: "none",
-          boxShadow: "0 8px 18px rgba(0,0,0,0.08)"
-        }}
-      >
-        +
-      </a>
     </main>
   );
 }

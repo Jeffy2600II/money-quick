@@ -1,16 +1,12 @@
 /* ==========================================================================
    Money Quick — Global styles (final)
-   - Includes: centered layout, accent-first pin dots, neutral-key borders,
-     larger digits & SVG, no shadows, accessible exceptions for inputs
-   - IMPORTANT: user-select disabled globally for UI elements (prevents text
-     selection), but inputs/textareas/selects remain selectable via exception.
+   (original contents kept; appended bottom-nav + header settings styles)
    ========================================================================== */
 
 /* Import font */
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
 
 :root{
-  /* Colors */
   --bg: #ffffff;
   --text: #0f172a;
   --muted: #6b7280;
@@ -18,31 +14,18 @@
   --accent: #00c48a;
   --accent-strong: #04996f;
   --error: #ef4444;
-
-  /* Layout / spacing */
   --logo-gap: 10px;
   --logo-line1: 36px;
   --logo-line2: 30px;
   --prompt-size: 18px;
-
-  /* Key sizes (kept balanced) */
   --key-size: 88px;
   --key-size-sm: 72px;
-
   --key-gap: 22px;
-
-  /* Digit typography (slightly larger than before) */
   --digit-font-size: 1.7rem;
   --digit-font-size-sm: 1.35rem;
-
-  /* Pin dot */
   --pin-dot-size: 20px;
   --pin-dot-size-sm: 14px;
-
-  /* border thickness */
   --thin: 1px;
-
-  /* transitions */
   --fast: 120ms;
 }
 
@@ -51,11 +34,6 @@
 *::before,
 *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* -------------------------
-   USER SELECTION (IMPORTANT)
-   - Prevent selecting UI text by default (buttons, labels, digits, etc.)
-   - Allow selection where appropriate: inputs, textareas, selects, contenteditable
-   ------------------------- */
 html, body, #__next {
   height: 100%;
   user-select: none;
@@ -64,16 +42,12 @@ html, body, #__next {
   -ms-user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
-
-/* Allow selection for form controls and contenteditable */
 input, textarea, select, option, [contenteditable="true"] {
   user-select: text !important;
   -webkit-user-select: text !important;
   -moz-user-select: text !important;
   -ms-user-select: text !important;
 }
-
-/* Base typography & smoothing */
 html, body {
   background: var(--bg);
   color: var(--text);
@@ -84,22 +58,19 @@ html, body {
   line-height: 1.25;
 }
 
-/* -------------------------
-   Page container (centered)
-   - Vertical & horizontal center; uses height:100% avoids vh issues
-   ------------------------- */
+/* Page container (centered) */
 .pin-page {
   height: 100%;
   min-height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;   /* vertical centering */
+  justify-content: center;
   padding: 20px;
   background: var(--bg);
 }
 
-/* small top spacer to not push content down */
+/* small top spacer */
 .pin-top { width:100%; max-width:420px; height: 10px; }
 
 /* Brand area */
@@ -133,10 +104,7 @@ html, body {
   text-align: center;
 }
 
-/* -------------------------
-   Pin dots: accent border by default; filled uses same accent
-   - Increased gap below to separate from numpad
-   ------------------------- */
+/* Pin dots & error visuals */
 .pin-dots {
   display:flex;
   gap: 18px;
@@ -147,7 +115,7 @@ html, body {
   width: var(--pin-dot-size);
   height: var(--pin-dot-size);
   border-radius: 9999px;
-  border: var(--thin) solid var(--accent); /* accent used from start */
+  border: var(--thin) solid var(--accent);
   background: transparent;
   transition: background var(--fast) ease, border-color var(--fast) ease;
   box-sizing: border-box;
@@ -156,11 +124,6 @@ html, body {
   background: var(--accent);
   border-color: var(--accent);
 }
-
-/* -------------------------
-   Pin error visual: red border + subtle shake (temporary)
-   - Applied by adding .pin-error class on .pin-dots (PinInput triggers this)
-   ------------------------- */
 .pin-dots.pin-error,
 .pin-dots.pin-error .pin-dot {
   border-color: #ef4444 !important;
@@ -169,8 +132,6 @@ html, body {
   background: #ef4444 !important;
   border-color: #ef4444 !important;
 }
-
-/* shake animation for the group */
 @keyframes mq-pin-shake {
   0% { transform: translateX(0); }
   25% { transform: translateX(-8px); }
@@ -182,26 +143,17 @@ html, body {
   animation: mq-pin-shake 420ms cubic-bezier(.36,.07,.19,.97);
 }
 
-/* When parent sets disabled (via PinInput prop) we dim the whole pin input block
-   and prevent interaction. This is used while verifying/saving to indicate
-   temporary non-interactivity. */
+/* Disabled pin input root */
 .pin-input-root.pin-input-disabled {
   opacity: 0.55;
-  pointer-events: none; /* ensure all child interactions disabled */
+  pointer-events: none;
   transition: opacity 120ms ease;
 }
 
 /* Error text */
-.error-text {
-  color: var(--error);
-  font-size: 0.95rem;
-  margin-top: 10px;
-  text-align: center;
-}
+.error-text { color: var(--error); font-size: 0.95rem; margin-top: 10px; text-align: center; }
 
-/* -------------------------
-   Numpad grid (centered)
-   ------------------------- */
+/* Numpad grid */
 .numpad-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -213,20 +165,18 @@ html, body {
   box-sizing: border-box;
 }
 .numpad_cell, .numpad-cell { width: var(--key-size); height: var(--key-size); }
-
-/* Numeric keys: neutral border default, active uses accent */
 .numpad-key {
   width: var(--key-size);
   height: var(--key-size);
   border-radius: 9999px;
   background: transparent;
-  border: var(--thin) solid var(--border); /* neutral default */
+  border: var(--thin) solid var(--border);
   display:inline-flex;
   align-items:center;
   justify-content:center;
   cursor:pointer;
   transition: border-color var(--fast) ease;
-  user-select: none; /* prevent selection of digit labels */
+  user-select: none;
   -webkit-tap-highlight-color: transparent;
   outline: none;
   box-sizing: border-box;
@@ -234,8 +184,6 @@ html, body {
 .numpad-key:focus { outline: none; }
 .numpad-key:active,
 .numpad-key:focus-visible { border-color: var(--accent); }
-
-/* Digit label */
 .numpad-key-label {
   font-size: var(--digit-font-size);
   font-weight: 400;
@@ -245,8 +193,6 @@ html, body {
   display: inline-block;
   transform: translateY(-1px);
 }
-
-/* Backspace key (icon only) */
 .numpad-key-back {
   width: var(--key-size);
   height: var(--key-size);
@@ -263,21 +209,23 @@ html, body {
 }
 .numpad-key-back:active,
 .numpad-key-back:focus { background: transparent; }
-
-/* Backspace SVG size synced to digit size */
 .numpad-key-icon svg,
-.numpad-back-svg {
-  width: calc(var(--digit-font-size) * 1.3);
-  height: calc(var(--digit-font-size) * 1.3);
-  display:block;
-  stroke: currentColor;
-  color: #000;
-  fill: none;
-}
-
-/* Disabled */
+.numpad-back-svg { width: calc(var(--digit-font-size) * 1.3); height: calc(var(--digit-font-size) * 1.3); display:block; stroke: currentColor; color: #000; fill: none; }
 .numpad-key[disabled],
 .numpad-key-back[disabled] { opacity: 0.45; cursor: not-allowed; }
+.numpad-key.pressed {
+  transform: translateY(1px) scale(0.99);
+  border-color: var(--accent);
+  transition: transform 90ms ease, border-color 90ms ease;
+}
+.numpad-key[disabled],
+.numpad-key-back[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+.numpad-key, .numpad-key-back { touch-action: manipulation; -ms-touch-action: manipulation; }
+.numpad-key:focus-visible {
+  outline: 2px solid rgba(0,196,138,0.12);
+  outline-offset: 4px;
+  border-color: var(--accent);
+}
 
 /* Confirm button */
 .confirm-button {
@@ -346,33 +294,100 @@ html, body {
 .mt-3 { margin-top: 0.75rem; }
 .mt-4 { margin-top: 1rem; }
 
-/* Additions tuned for the improved Numpad UX (append to globals.css) */
+/* Loader styles appended in loader.css */
 
-/* pressed state for better touch feedback */
-.numpad-key.pressed {
-  transform: translateY(1px) scale(0.99);
-  border-color: var(--accent);
-  transition: transform 90ms ease, border-color 90ms ease;
+/* =========================
+   Added: Header settings & bottom navigation styles
+   ========================= */
+
+/* Header settings button (top-right of header area) */
+.header-settings {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: background 160ms ease, color 160ms ease;
+}
+.header-settings:hover {
+  background: rgba(0,0,0,0.03);
+  color: var(--text);
 }
 
-/* ensure disabled whole input (via pin-input-disabled) already dims;
-   but also ensure individual keys show disabled cursor */
-.numpad-key[disabled],
-.numpad-key-back[disabled] {
-  opacity: 0.45;
-  cursor: not-allowed;
-  pointer-events: none;
+/* Bottom navigation root */
+.mq-bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 14000;
+  pointer-events: auto;
+  background: linear-gradient(180deg, rgba(255,255,255,0.0), rgba(255,255,255,0.98));
+  backdrop-filter: blur(4px);
+  box-sizing: border-box;
+  padding: 8px 12px;
 }
 
-/* Slightly reduce pointer-event area to avoid accidental drags and improve precision */
-.numpad-key, .numpad-key-back {
-  touch-action: manipulation;
-  -ms-touch-action: manipulation;
+/* inner container for icons (space for center FAB) */
+.mq-bottom-nav-inner {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  box-sizing: border-box;
+  position: relative;
 }
 
-/* Focus-visible for keyboard users */
-.numpad-key:focus-visible {
-  outline: 2px solid rgba(0,196,138,0.12);
-  outline-offset: 4px;
-  border-color: var(--accent);
+/* small icon buttons (left/right) */
+.mq-bottom-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #111827;
+  text-decoration: none;
+  background: #fff;
+  border: 1px solid rgba(15,23,42,0.06);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.mq-bottom-icon:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(2,6,23,0.06); }
+
+/* center FAB (elevated) */
+.mq-bottom-fab {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) translateY(-34%);
+  width: 68px;
+  height: 68px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 10px 30px rgba(4,153,111,0.18);
+  border: none;
+  z-index: 2;
+}
+
+/* responsive adjustments (smaller screens) */
+@media (max-width: 480px) {
+  .mq-bottom-nav { height: 68px; padding-bottom: 6px; }
+  .mq-bottom-fab { width: 60px; height: 60px; transform: translateX(-50%) translateY(-32%); }
+  .mq-bottom-icon { width: 42px; height: 42px; }
 }
