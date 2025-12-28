@@ -1,0 +1,119 @@
+/* Manager page styles (mq-manager prefix) */
+
+.mq-manager {
+  min-height: 100vh;
+  padding: 18px 14px 96px;
+  background: var(--neutral-50, #FAFBFC);
+  display: flex;
+  justify-content: center;
+  color: var(--text, #111827);
+}
+
+.mq-manager-container {
+  width: 100%;
+  max-width: 720px;
+}
+
+.mq-manager-header {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom: 14px;
+}
+.mq-manager-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.mq-manager-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Card */
+.mq-manager-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px;
+  border: 1px solid rgba(15,23,42,0.06);
+  box-sizing: border-box;
+}
+
+/* rows */
+.mq-manager-row {
+  display:flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.mq-manager-row .label {
+  font-weight: 600;
+  color: var(--muted, #6b7280);
+}
+
+/* amount input */
+.mq-manager-amount {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border: 1px solid rgba(15,23,42,0.06);
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff;
+}
+.mq-manager-amount-input {
+  border: none;
+  outline: none;
+  font-size: 1.25rem;
+  width: 100%;
+  -moz-appearance: textfield;
+}
+.mq-manager-amount-input::-webkit-outer-spin-button,
+.mq-manager-amount-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.mq-manager-currency {
+  font-weight: 700;
+  color: var(--accent-strong, #04996f);
+}
+
+/* generic inputs */
+.mq-manager-input {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(15,23,42,0.06);
+  font-size: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* actions */
+.mq-manager-actions {
+  margin-top: 6px;
+  display:flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* preview area */
+.mq-manager-preview {
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: linear-gradient(180deg,#fff,#fff);
+  border: 1px solid rgba(15,23,42,0.04);
+}
+.mq-manager-preview h3 { margin: 0 0 6px 0; font-size: 1rem; }
+.mq-manager-preview .muted { color: var(--muted); }
+
+/* responsive */
+@media (max-width: 560px) {
+  .mq-manager {
+    padding: 12px 12px 96px;
+  }
+  .mq-manager-amount-input { font-size: 1.1rem; }
+  .mq-manager-card { padding: 12px; }
+}
