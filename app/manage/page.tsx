@@ -5,7 +5,7 @@ import { useLoader } from "../../components/LoaderProvider";
 import { usePopup } from "../../components/PopupProvider";
 import Numpad from "../../components/Numpad";
 import PinInput, { PinInputHandle } from "../../components/PinInput";
-import '../styles/manage.css';
+import '../../styles/manage.css'; // <-- corrected path (was ../styles/manage.css)
 import * as pinClient from "../../lib/pinClient";
 
 export default function ManagePage() {
