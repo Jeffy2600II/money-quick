@@ -18,12 +18,13 @@ export default function MainPage() {
 
     async function load() {
       try {
-        // Show central loader (LoaderProvider ensures min duration behavior)
-        loader.show('กำลังโหลดหน้าหลัก...');
+        // Use central loader (LoaderProvider) for consistent UX
+        loader.show('กำลังโหลดข้อมูล...');
         const [bRes, hRes] = await Promise.all([
           fetch("/api/balance"),
           fetch("/api/history"),
         ]);
+
         if (!mounted) return;
 
         if (!bRes.ok) throw new Error('Failed to load balance');
@@ -33,25 +34,28 @@ export default function MainPage() {
         const hJson = await hRes.json();
 
         setBalance(Number(bJson.balance ?? 0));
+        // Expect the server to manage retention/clearing (server-side TTL/cleanup).
+        // Client displays whatever /api/history returns (current-month items if server enforces TTL).
         setHistory(Array.isArray(hJson) ? (hJson as Tx[]) : []);
       } catch (e) {
         setError("เกิดข้อผิดพลาดในการโหลดข้อมูล");
       } finally {
         if (mounted) {
-          // hide central loader (allows LoaderProvider to respect minDuration)
           loader.hide();
           setLoading(false);
         }
       }
     }
 
-    // slight delay so loader show/hide feels smooth on fast loads
-    const t = window.setTimeout(() => { void load(); }, 80);
+    const t = window.setTimeout(() => { void load(); }, 60);
     return () => { mounted = false; clearTimeout(t); loader.hide(true); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const recent = history.slice(0, 3);
+  // Sort by time desc and take recent 3
+  const sorted = [...history].sort((a, b) => (b.time || 0) - (a.time || 0));
+  const recent = sorted.slice(0, 3);
+
   const totals = history.reduce(
     (acc, tx) => {
       if (tx.type === "in") acc.in += Number(tx.amount || 0);
@@ -66,10 +70,13 @@ export default function MainPage() {
     return `฿ ${n.toLocaleString()}`;
   }
 
-  function formatTime(ts?: number) {
+  // Format date/time in Thai: e.g. "14 ธ.ค. 13:45"
+  function formatDateThai(ts?: number) {
     if (!ts) return "";
     const d = new Date(ts);
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const datePart = new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short' }).format(d);
+    const timePart = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    return `${datePart} ${timePart}`;
   }
 
   return (
@@ -101,7 +108,7 @@ export default function MainPage() {
               <div className="balance-value">
                 {loading ? <div className="skeleton skeleton-balance" /> : <Balance value={balance ?? 0} />}
               </div>
-              <div className="muted small">อัปเดตล่าสุด: {history.length ? formatTime(history[0].time) : "—"}</div>
+              <div className="muted small">อัปเดตล่าสุด: {sorted.length ? formatDateThai(sorted[0].time) : "—"}</div>
             </div>
 
             <div className="summary-grid">
@@ -117,7 +124,7 @@ export default function MainPage() {
           </div>
 
           <div className="dashboard-actions">
-            <div className="note muted small">หากต้องการแก้ไขหรือสร้างรายการใหม่ ให้กดปุ่ม "+" ด้านล่าง</div>
+            <div className="note muted small">ระบบศูนย์กลางจัดการการเก็บ/ลบข้อมูล (ประวัติจะถูกจัดการที่ฝั่ง server)</div>
           </div>
         </section>
 
@@ -134,7 +141,7 @@ export default function MainPage() {
               Array.from({ length: 3 }).map((_, i) => (
                 <div className="recent-item skeleton-row" key={i}>
                   <div className="skeleton avatar" />
-                  <div className="skeleton-lines">
+                  <div className="skeleton-lines" style={{ flex: 1 }}>
                     <div className="skeleton skeleton-line short" />
                     <div className="skeleton skeleton-line tiny" />
                   </div>
@@ -147,7 +154,7 @@ export default function MainPage() {
                   <div className={`avatar ${tx.type === 'in' ? 'in' : 'out'}`}>{tx.type === 'in' ? '+' : '−'}</div>
                   <div className="recent-meta">
                     <div className="recent-title">{tx.type === 'in' ? 'เงินเข้า' : 'เงินออก'}</div>
-                    <div className="muted small">{formatTime(tx.time)}</div>
+                    <div className="muted small">{formatDateThai(tx.time)}</div>
                   </div>
                   <div className={`recent-amount ${tx.type === 'in' ? 'in' : 'out'}`}>
                     {tx.type === 'in' ? '+' : '-'} ฿ {tx.amount.toLocaleString()}
@@ -164,8 +171,8 @@ export default function MainPage() {
           <div className="info-card">
             <div className="info-title">คำแนะนำ</div>
             <ul>
-              <li>หน้านี้เป็นแดชบอร์ดสำหรับดูข้อมูลหลัก — ใช้ปุ่มด้านล่างเพื่อเพิ่มรายการ</li>
-              <li>การจัดการ PIN อยู่ในหน้า ตั้งค่า</li>
+              <li>ข้อมูลประวัติและการลบถูกจัดการจากฝั่งศูนย์กลาง (server)</li>
+              <li>หากต้องการเก็บประวัติระยะยาว โปรดสำรองข้อมูลภายนอก</li>
             </ul>
           </div>
         </section>

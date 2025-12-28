@@ -5,12 +5,18 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
 
+// get unchanged
 export async function getKV < T > (key: string): Promise < T | undefined > {
   const result = await redis.get < T > (key as string);
   return result ?? undefined;
 }
 
-export async function setKV < T > (key: string, value: T) {
+// setKV now accepts optional ttlSeconds (expire)
+export async function setKV < T > (key: string, value: T, ttlSeconds ? : number) {
+  if (typeof ttlSeconds === "number") {
+    // Upstash redis.set supports options { ex: seconds }
+    return await redis.set(key as string, value, { ex: Math.max(1, Math.floor(ttlSeconds)) });
+  }
   return await redis.set(key as string, value);
 }
 
