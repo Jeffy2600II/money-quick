@@ -1,19 +1,34 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ManagerForm from '../../components/ManagerForm';
 import '../../styles/manager.css';
 import BottomNav from '../../components/BottomNav';
-import PrefetchOnHover from '../../components/PrefetchOnHover';
+import Balance from '../../components/Balance';
 
-/**
- * Manage page: reworked to match Dashboard structure and spacing exactly.
- * - Uses same "dashboard-vertical" container so layout aligns with Dashboard.
- * - Brand/header uses same DOM/classes as dashboard so visual identity is identical.
- * - Main content placed in a centered card with balanced padding and gap.
- */
+type Tx = { type: string;amount: number;time: number };
 
 export default function ManagePage() {
+  const [balance, setBalance] = useState < number | null > (null);
+  
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/balance');
+        if (!res.ok) {
+          if (mounted) setBalance(0);
+          return;
+        }
+        const j = await res.json();
+        if (mounted) setBalance(typeof j.balance === 'number' ? j.balance : Number(j.balance) || 0);
+      } catch {
+        if (mounted) setBalance(0);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+  
   return (
     <main className="dashboard-page">
       <div className="dashboard-vertical">
@@ -23,48 +38,31 @@ export default function ManagePage() {
             <div className="logo-line1">Money</div>
             <div className="logo-line2">quick</div>
           </div>
-          <div className="dashboard-prompt">จัดการรายรับ / รายจ่าย</div>
+          <div className="dashboard-prompt">จัดการรายการ</div>
         </div>
 
-        {/* Card container: visual parity with dashboard.recent-list / cards */}
+        {/* Balance only (per your request) */}
+        <div className="dashboard-balance" aria-hidden>
+          <Balance value={balance ?? 0} />
+          <div className="muted small">ยอดคงเหลือ</div>
+        </div>
+
+        {/* Main card area: manager form only (no history, no summary) */}
         <section className="dashboard-card-outer">
           <div className="dashboard-card-inner">
             <header className="dashboard-card-header">
               <div>
-                <h1 className="dashboard-card-title">เพิ่ม / แก้ไขรายการ</h1>
-                <div className="muted small">เพิ่มรายการใหม่เพื่อบันทึกลงบัญชี</div>
+                <h2 className="dashboard-card-title">บันทึกรายการ</h2>
+                <div className="muted small">กรอกข้อมูลแล้วกดยืนยันเพื่อบันทึก</div>
               </div>
-
-              <div className="dashboard-card-actions">
-                <PrefetchOnHover href="/">
-                  <a className="link-button" style={{ textDecoration: 'none' }}>กลับสู่หน้าแรก</a>
-                </PrefetchOnHover>
-              </div>
+              {/* intentionally left empty: no "ดูประวัติทั้งหมด" button */}
+              <div />
             </header>
 
-            <div className="dashboard-card-body">
-              {/* Left: the ManagerForm (flex: 1) */}
-              <div className="manage-left">
+            <div className="dashboard-card-body single-column">
+              <div className="manage-left" style={{ width: '100%' }}>
                 <ManagerForm />
               </div>
-
-              {/* Right: contextual preview/info (same visual system as dashboard preview) */}
-              <aside className="manage-right" aria-hidden>
-                <div className="manage-preview-card">
-                  <h3 style={{ margin: 0 }}>ตัวอย่างรายการล่าสุด</h3>
-                  <p className="muted small">รายการจะแสดงที่หน้าประวัติหลังบันทึก</p>
-                </div>
-
-                <div style={{ height: 12 }} />
-
-                <div className="manage-help-card">
-                  <div className="muted small" style={{ fontWeight: 700, marginBottom: 8 }}>คำแนะนำ</div>
-                  <ul style={{ margin: 0, paddingLeft: 16 }}>
-                    <li className="muted small">ระบบบันทึกข้อมูลบนเซิร์ฟเวอร์</li>
-                    <li className="muted small">หากต้องการสำรองข้อมูล โปรดดาวน์โหลดไฟล์บันทึก</li>
-                  </ul>
-                </div>
-              </aside>
             </div>
           </div>
         </section>
