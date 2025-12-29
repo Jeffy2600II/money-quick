@@ -1,19 +1,19 @@
-/* Updated manager.css: align structure & tokens with dashboard styles
-   - Uses the same spacing and card appearance as dashboard.css
-   - Keeps form-specific styles for ManagerForm but placed within consistent layout
+/* Manager styles — redesigned to match Dashboard visual system exactly.
+   - Reuses tokens from globals/modern-styles.min.css and globals.css (colors, radii, spacing).
+   - Aligns typography, spacing, card sizes to dashboard.css for consistent UI.
 */
 
-/* Container tweaks to match dashboard vertical layout */
-.mq-manager-card-wrapper {
+/* Outer card wrapper to match dashboard cards */
+.dashboard-card-outer {
   width: 100%;
-  max-width: 640px;
+  max-width: 900px; /* allow slightly wider content on desktop but same centered rhythm */
   margin: 0 auto 40px;
-  box-sizing: border-box;
   padding: 0 12px;
+  box-sizing: border-box;
 }
 
-/* Inner card (visual match to dashboard lists/cards) */
-.mq-manager-card-inner {
+/* Inner card: same look/feel as dashboard-recent-list / other cards */
+.dashboard-card-inner {
   background: #fff;
   border-radius: 12px;
   padding: 16px;
@@ -21,125 +21,102 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
-/* Header inline (title + optional actions) — consistent with dashboard header spacing */
-.mq-manager-header-inline {
+/* Header within card: title (matching dashboard typography) + right actions */
+.dashboard-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 4px;
 }
-.mq-manager-title {
-  margin: 0;
+.dashboard-card-title {
   font-size: 1.1rem;
   font-weight: 700;
+  margin: 0;
   color: var(--text, #111827);
 }
-.mq-manager-actions-inline { display: flex; gap: 8px; align-items: center; }
 
-/* Main area holds the existing ManagerForm */
-.mq-manager-main-area {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
+/* Small muted helper text uses same tokens as dashboard */
+.muted { color: var(--muted); font-size: 0.92rem; }
+.small { font-size: 0.86rem; }
 
-/* Keep ManagerForm card visuals but adapt to new tokens */
-.mq-manager-form {
+/* Body of the card: 2-column layout (form | sidebar) with good spacing */
+.dashboard-card-body {
   display: flex;
-  gap: 14px;
+  gap: 16px;
   align-items: flex-start;
-  flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* Left column: form card */
-.mq-manager-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 14px;
-  border: 1px solid rgba(15,23,42,0.06);
-  box-sizing: border-box;
-  flex: 1 1 420px;
+/* Left: ManagerForm area — occupies remaining space */
+.manage-left {
+  flex: 1 1 0;
   min-width: 280px;
 }
 
-/* Right column: preview / auxiliary */
-.mq-manager-preview {
-  background: #fff;
+/* Right: contextual area, visually consistent with dashboard preview cards */
+.manage-right {
+  width: 260px;
+  flex: 0 0 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Preview & help cards inside right column reuse card styling */
+.manage-preview-card,
+.manage-help-card {
+  background: linear-gradient(180deg,#fff,#fff);
   border-radius: 12px;
   padding: 12px;
   border: 1px solid rgba(15,23,42,0.04);
   box-sizing: border-box;
-  width: 260px;
-  flex: 0 0 260px;
 }
 
-/* Rows and controls (kept from original but tuned spacing) */
-.mq-manager-row {
-  display:flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.mq-manager-row .label {
-  font-weight: 600;
-  color: var(--muted, #6b7280);
-}
+/* ManagerForm card is already styled in component; ensure it fills left column nicely */
+.mq-manager-form { width: 100%; }
 
-/* amount input */
-.mq-manager-amount {
-  display:flex;
-  align-items:center;
-  gap:8px;
+/* Keep form controls spacing similar to dashboard tokens */
+.mq-manager-card {
+  padding: 14px;
+  border-radius: 12px;
   border: 1px solid rgba(15,23,42,0.06);
-  padding: 8px 10px;
-  border-radius: 8px;
   background: #fff;
-}
-.mq-manager-amount-input {
-  border: none;
-  outline: none;
-  font-size: 1.25rem;
-  width: 100%;
-  -moz-appearance: textfield;
-}
-.mq-manager-currency {
-  font-weight: 700;
-  color: var(--accent-strong, #04996f);
+  box-sizing: border-box;
 }
 
-/* actions area in card */
-.mq-manager-actions {
-  margin-top: 6px;
-  display:flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* Responsive: stack preview under form on small screens */
+/* Responsive: stack into single column under 920px (same breakpoint as dashboard adjustments) */
 @media (max-width: 920px) {
-  .mq-manager-form {
+  .dashboard-card-body {
     flex-direction: column;
   }
-  .mq-manager-preview {
+  .manage-right {
     width: 100%;
     flex: 1 1 auto;
   }
-  .mq-manager-card {
-    width: 100%;
-  }
-  .mq-manager-card-wrapper { padding: 0 12px; }
+  .dashboard-card-outer { padding: 0 12px; }
 }
 
-/* Minor utility: subtle note style */
-.mq-manager-note {
-  color: var(--muted, #6b7280);
-  font-size: 0.95rem;
+/* Minor utilities to match dashboard spacing */
+.logo-line1 { font-size: var(--logo-line1); font-weight: 700; }
+.logo-line2 { font-size: var(--logo-line2); color: var(--accent); margin-top: -6px; }
+.link-button { color: var(--accent-strong, #04996f); font-weight: 600; text-decoration: none; }
+
+/* Ensure buttons/inputs inside ManagerForm inherit consistent font sizes */
+.mq-manager-amount-input,
+.mq-manager-input,
+.numpad-key-label {
+  font-family: inherit;
+  font-size: 1.05rem; /* tuned to feel consistent with dashboard numerics */
 }
 
-/* Ensure the manager page inherits header/brand styles from globals/dashboard */
-.dashboard-brand .logo-line1 { font-size: var(--logo-line1); font-weight: 700; }
-.dashboard-brand .logo-line2 { font-size: var(--logo-line2); font-weight: 700; color: var(--accent); margin-top: -6px; }
+/* Accessibility: keep focus/active states similar to dashboard */
+.mq-manager-card:active,
+.mq-manager-card:focus-within {
+  transform: none;
+}
+
+/* End of manager.css */
