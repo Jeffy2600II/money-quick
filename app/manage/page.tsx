@@ -7,9 +7,10 @@ import BottomNav from '../../components/BottomNav';
 import Balance from '../../components/Balance';
 
 /**
- * New: single application-level container (app-container).
- * - No nested containers; everything lives inside app-container.
- * - ManagerForm is used unchanged; preview inside it is hidden via CSS so only one card remains.
+ * Manage page aligned to Dashboard visual system:
+ * - Reuse dashboard-page & dashboard-vertical so background/header/colors are identical to Dashboard
+ * - Only one visible card remains: the ManagerForm (.mq-manager-card)
+ * - No history, no summary cards; header and spacing match Dashboard
  */
 
 export default function ManagePage() {
@@ -34,31 +35,34 @@ export default function ManagePage() {
   }, []);
   
   return (
-    <main className="app-root">
-      {/* Single top-level container only */}
-      <div className="app-container">
-        {/* Brand (kept visually consistent with Dashboard) */}
-        <div className="logo" aria-hidden style={{ textAlign: 'center', marginBottom: 6 }}>
-          <div className="logo-line1">Money</div>
-          <div className="logo-line2">quick</div>
+    <main className="dashboard-page">
+      <div className="dashboard-vertical">
+        {/* Brand - identical structure to Dashboard for visual parity */}
+        <div className="dashboard-brand" role="banner" aria-hidden>
+          <div className="logo" aria-hidden>
+            <div className="logo-line1">Money</div>
+            <div className="logo-line2">quick</div>
+          </div>
+          <div className="dashboard-prompt">จัดการรายการ</div>
         </div>
-        <div className="dashboard-prompt" style={{ textAlign: 'center', marginBottom: 12 }}>จัดการรายการ</div>
 
-        {/* Balance (centered, prominent) */}
-        <div style={{ textAlign: 'center', marginBottom: 16 }}>
+        {/* Balance - same look as Dashboard */}
+        <div className="dashboard-balance" aria-hidden>
           <Balance value={balance ?? 0} />
           <div className="muted small">ยอดคงเหลือ</div>
         </div>
 
-        {/* Page header (title + small hint) */}
-        <header className="manage-header">
-          <h2 className="manage-title">บันทึกรายการ</h2>
-          <div className="manage-sub muted small">กรอกข้อมูลแล้วกดยืนยันเพื่อบันทึก</div>
-        </header>
+        {/* Page header and single form card only */}
+        <div style={{ width: '100%', maxWidth: 720, margin: '0 auto', padding: '0 12px', boxSizing: 'border-box' }}>
+          <header className="manage-header" style={{ marginBottom: 12 }}>
+            <h2 className="manage-title" style={{ margin: 0 }}>บันทึกรายการ</h2>
+            <div className="manage-sub muted small" style={{ marginTop: 6 }}>กรอกข้อมูลแล้วกดยืนยันเพื่อบันทึก</div>
+          </header>
 
-        {/* Single visible card area: ManagerForm (component unchanged) */}
-        <div className="manage-form-wrapper">
-          <ManagerForm />
+          {/* Only ManagerForm card remains (component unchanged) */}
+          <div className="manage-form-wrapper">
+            <ManagerForm />
+          </div>
         </div>
       </div>
 
