@@ -6,8 +6,6 @@ import '../../styles/manager.css';
 import BottomNav from '../../components/BottomNav';
 import Balance from '../../components/Balance';
 
-type Tx = { type: string;amount: number;time: number };
-
 export default function ManagePage() {
   const [balance, setBalance] = useState < number | null > (null);
   
@@ -41,31 +39,24 @@ export default function ManagePage() {
           <div className="dashboard-prompt">จัดการรายการ</div>
         </div>
 
-        {/* Balance only (per your request) */}
+        {/* Balance only */}
         <div className="dashboard-balance" aria-hidden>
           <Balance value={balance ?? 0} />
           <div className="muted small">ยอดคงเหลือ</div>
         </div>
 
-        {/* Main card area: manager form only (no history, no summary) */}
-        <section className="dashboard-card-outer">
-          <div className="dashboard-card-inner">
-            <header className="dashboard-card-header">
-              <div>
-                <h2 className="dashboard-card-title">บันทึกรายการ</h2>
-                <div className="muted small">กรอกข้อมูลแล้วกดยืนยันเพื่อบันทึก</div>
-              </div>
-              {/* intentionally left empty: no "ดูประวัติทั้งหมด" button */}
-              <div />
-            </header>
+        {/* SINGLE container (no outer card background) */}
+        <div className="manage-container">
+          <header className="manage-header">
+            <h2 className="manage-title">บันทึกรายการ</h2>
+            <div className="manage-sub muted small">กรอกข้อมูลแล้วกดยืนยันเพื่อบันทึก</div>
+          </header>
 
-            <div className="dashboard-card-body single-column">
-              <div className="manage-left" style={{ width: '100%' }}>
-                <ManagerForm />
-              </div>
-            </div>
+          {/* Only one visible card: the ManagerForm card (.mq-manager-card) */}
+          <div className="manage-form-wrapper">
+            <ManagerForm />
           </div>
-        </section>
+        </div>
       </div>
 
       <BottomNav />

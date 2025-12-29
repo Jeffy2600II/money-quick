@@ -1,42 +1,70 @@
-/* Manager styles — adjusted to match Dashboard visual system,
-   but simplified: no recent preview, no history button.
-   Focus: balance + form, clean spacing, typography parity with dashboard.
+/* Manager styles — simplified container layout
+   - Remove outer card background; keep a single card: .mq-manager-card (ManagerForm)
+   - Container centered, airy spacing, typography consistent with dashboard
 */
 
-/* Outer layout parity with dashboard */
-.dashboard-card-outer {
+/* Container that replaces the previous outer card */
+.manage-container {
   width: 100%;
-  max-width: 900px;
-  margin: 0 auto 40px;
+  max-width: 720px;
+  margin: 12px auto 44px;
   padding: 0 12px;
   box-sizing: border-box;
 }
-.dashboard-card-inner {
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  border: 1px solid rgba(15,23,42,0.06);
-  box-sizing: border-box;
+
+/* Header inside container */
+.manage-header {
   display: flex;
   flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  text-align: left;
+}
+.manage-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text, #111827);
+}
+.manage-sub { margin: 0; color: var(--muted); }
+
+/* Wrapper for the single form card */
+.manage-form-wrapper {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  /* no background here — the form's own card (.mq-manager-card) provides the sole frame */
+  background: transparent;
+  padding: 0;
+}
+
+/* Ensure the ManagerForm card looks prominent but is the only card */
+.mq-manager-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px;
+  border: 1px solid rgba(15,23,42,0.06);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Keep form spacing and inputs consistent */
+.mq-manager-form {
+  display: flex;
   gap: 14px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* Header */
-.dashboard-card-header {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-}
-.dashboard-card-title {
-  margin:0;
-  font-size:1.1rem;
-  font-weight:700;
-  color:var(--text, #111827);
+/* When small screen, stack inside the single card */
+@media (max-width: 920px) {
+  .mq-manager-form { flex-direction: column; }
 }
 
-/* Balance block (reuses dashboard tokens) */
+/* Balance block styling inherited from dashboard but ensure no extra card */
 .dashboard-balance {
   width: 100%;
   text-align: center;
@@ -45,77 +73,29 @@
   box-sizing: border-box;
 }
 
-/* Single column body (form only) */
-.dashboard-card-body.single-column {
-  display: block;
-}
-.manage-left { width: 100%; }
-
-/* Keep ManagerForm card visuals but adapt to new tokens */
-.mq-manager-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 14px;
-  border: 1px solid rgba(15,23,42,0.06);
-  box-sizing: border-box;
-}
-
-/* Form rows & inputs keep consistent spacing */
-.mq-manager-row {
-  display:flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.mq-manager-row .label {
-  font-weight: 600;
-  color: var(--muted, #6b7280);
-}
-.mq-manager-amount {
-  display:flex;
-  align-items:center;
-  gap:8px;
-  border: 1px solid rgba(15,23,42,0.06);
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: #fff;
-}
-.mq-manager-amount-input {
-  border: none;
-  outline: none;
-  font-size: 1.25rem;
-  width: 100%;
-  -moz-appearance: textfield;
-}
-.mq-manager-currency {
-  font-weight: 700;
-  color: var(--accent-strong, #04996f);
-}
-
-/* Actions area in card */
-.mq-manager-actions {
-  margin-top: 6px;
-  display:flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* Responsive: form full width on small screens */
-@media (max-width: 920px) {
-  .dashboard-card-outer { padding: 0 12px; }
-}
-
-/* Typography utilities (shared with dashboard) */
+/* Typography helpers */
 .muted { color: var(--muted); font-size: 0.92rem; }
 .small { font-size: 0.86rem; }
 
-/* Ensure inputs/buttons inherit consistent font sizes */
+/* Ensure ManagerForm inputs inherit consistent font sizing */
 .mq-manager-amount-input, .mq-manager-input, .numpad-key-label {
   font-family: inherit;
   font-size: 1.05rem;
 }
 
-/* Minor utility */
+/* Minor adjustment: remove any outer shadows or background from wrapper classes used previously */
+.dashboard-card-inner,
+.dashboard-card-outer,
+.dashboard-card-body,
+.dashboard-summary-row,
+.dashboard-summary {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Keep link-button token */
 .link-button { color: var(--accent-strong, #04996f); font-weight:600; text-decoration:none; }
 
 /* End manager.css */
