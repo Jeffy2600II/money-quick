@@ -1,47 +1,83 @@
-/* Manager page styles (mq-manager prefix) */
+/* Updated manager.css: align structure & tokens with dashboard styles
+   - Uses the same spacing and card appearance as dashboard.css
+   - Keeps form-specific styles for ManagerForm but placed within consistent layout
+*/
 
-.mq-manager {
-  min-height: 100vh;
-  padding: 18px 14px 96px;
-  background: var(--neutral-50, #FAFBFC);
-  display: flex;
-  justify-content: center;
-  color: var(--text, #111827);
-}
-
-.mq-manager-container {
+/* Container tweaks to match dashboard vertical layout */
+.mq-manager-card-wrapper {
   width: 100%;
-  max-width: 720px;
+  max-width: 640px;
+  margin: 0 auto 40px;
+  box-sizing: border-box;
+  padding: 0 12px;
 }
 
-.mq-manager-header {
-  display:flex;
-  align-items:center;
-  gap:12px;
-  margin-bottom: 14px;
+/* Inner card (visual match to dashboard lists/cards) */
+.mq-manager-card-inner {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(15,23,42,0.06);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Header inline (title + optional actions) — consistent with dashboard header spacing */
+.mq-manager-header-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
 }
 .mq-manager-title {
+  margin: 0;
   font-size: 1.1rem;
   font-weight: 700;
-  margin: 0;
+  color: var(--text, #111827);
 }
+.mq-manager-actions-inline { display: flex; gap: 8px; align-items: center; }
 
-.mq-manager-main {
+/* Main area holds the existing ManagerForm */
+.mq-manager-main-area {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-/* Card */
+/* Keep ManagerForm card visuals but adapt to new tokens */
+.mq-manager-form {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+/* Left column: form card */
 .mq-manager-card {
   background: #fff;
   border-radius: 12px;
   padding: 14px;
   border: 1px solid rgba(15,23,42,0.06);
   box-sizing: border-box;
+  flex: 1 1 420px;
+  min-width: 280px;
 }
 
-/* rows */
+/* Right column: preview / auxiliary */
+.mq-manager-preview {
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid rgba(15,23,42,0.04);
+  box-sizing: border-box;
+  width: 260px;
+  flex: 0 0 260px;
+}
+
+/* Rows and controls (kept from original but tuned spacing) */
 .mq-manager-row {
   display:flex;
   flex-direction: column;
@@ -70,27 +106,12 @@
   width: 100%;
   -moz-appearance: textfield;
 }
-.mq-manager-amount-input::-webkit-outer-spin-button,
-.mq-manager-amount-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
 .mq-manager-currency {
   font-weight: 700;
   color: var(--accent-strong, #04996f);
 }
 
-/* generic inputs */
-.mq-manager-input {
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(15,23,42,0.06);
-  font-size: 1rem;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* actions */
+/* actions area in card */
 .mq-manager-actions {
   margin-top: 6px;
   display:flex;
@@ -98,22 +119,27 @@
   gap: 8px;
 }
 
-/* preview area */
-.mq-manager-preview {
-  margin-top: 8px;
-  padding: 12px;
-  border-radius: 12px;
-  background: linear-gradient(180deg,#fff,#fff);
-  border: 1px solid rgba(15,23,42,0.04);
-}
-.mq-manager-preview h3 { margin: 0 0 6px 0; font-size: 1rem; }
-.mq-manager-preview .muted { color: var(--muted); }
-
-/* responsive */
-@media (max-width: 560px) {
-  .mq-manager {
-    padding: 12px 12px 96px;
+/* Responsive: stack preview under form on small screens */
+@media (max-width: 920px) {
+  .mq-manager-form {
+    flex-direction: column;
   }
-  .mq-manager-amount-input { font-size: 1.1rem; }
-  .mq-manager-card { padding: 12px; }
+  .mq-manager-preview {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+  .mq-manager-card {
+    width: 100%;
+  }
+  .mq-manager-card-wrapper { padding: 0 12px; }
 }
+
+/* Minor utility: subtle note style */
+.mq-manager-note {
+  color: var(--muted, #6b7280);
+  font-size: 0.95rem;
+}
+
+/* Ensure the manager page inherits header/brand styles from globals/dashboard */
+.dashboard-brand .logo-line1 { font-size: var(--logo-line1); font-weight: 700; }
+.dashboard-brand .logo-line2 { font-size: var(--logo-line2); font-weight: 700; color: var(--accent); margin-top: -6px; }
