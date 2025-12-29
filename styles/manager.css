@@ -1,44 +1,59 @@
-/* Manager styles — simplified container layout
-   - Remove outer card background; keep a single card: .mq-manager-card (ManagerForm)
-   - Container centered, airy spacing, typography consistent with dashboard
+/* manager.css — application-level single container approach
+   - app-container: the only container. No nested outer cards.
+   - keep one visible card: the ManagerForm's .mq-manager-card
+   - to avoid touching component logic, hide ManagerForm's preview (.mq-manager-preview) via CSS
+   - typography & spacing use global tokens (from globals.css / modern-styles)
 */
 
-/* Container that replaces the previous outer card */
-.manage-container {
-  width: 100%;
-  max-width: 720px;
-  margin: 12px auto 44px;
-  padding: 0 12px;
+/* Top-level app root (page-level) */
+.app-root {
+  min-height: 100vh;
+  background: var(--bg, #fff);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 12px 96px;
   box-sizing: border-box;
 }
 
-/* Header inside container */
+/* Single application container (centered, max-width) */
+.app-container {
+  width: 100%;
+  max-width: 720px; /* professional content width */
+  box-sizing: border-box;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+}
+
+/* Brand tokens (reuse existing classes) */
+.logo { display:flex; flex-direction:column; align-items:center; line-height:1; margin-top: 6px; }
+.logo-line1 { font-size: var(--logo-line1); font-weight: 700; color: var(--text, #111827); }
+.logo-line2 { font-size: var(--logo-line2); font-weight: 700; color: var(--accent); margin-top: -6px; }
+
+.dashboard-prompt { font-size: var(--prompt-size); font-weight:600; color: var(--muted); }
+
+/* Header for the form section (title + hint) */
 .manage-header {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 12px;
-  text-align: left;
+  margin-top: 6px;
 }
-.manage-title {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text, #111827);
-}
+.manage-title { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text); }
 .manage-sub { margin: 0; color: var(--muted); }
 
-/* Wrapper for the single form card */
+/* Manager form wrapper: no background, no outer card */
 .manage-form-wrapper {
-  display: block;
   width: 100%;
   box-sizing: border-box;
-  /* no background here — the form's own card (.mq-manager-card) provides the sole frame */
-  background: transparent;
+  display: block;
   padding: 0;
 }
 
-/* Ensure the ManagerForm card looks prominent but is the only card */
+/* Ensure ManagerForm's main interactive card (.mq-manager-card) is the only visible framed element */
 .mq-manager-card {
   background: #fff;
   border-radius: 12px;
@@ -46,10 +61,16 @@
   border: 1px solid rgba(15,23,42,0.06);
   box-sizing: border-box;
   width: 100%;
-  max-width: 100%;
+  /* subtle elevation if desired (comment/uncomment) */
+  /* box-shadow: 0 6px 18px rgba(2,6,23,0.04); */
 }
 
-/* Keep form spacing and inputs consistent */
+/* Hide ManagerForm's preview card so there is only one card visible (no DOM change to component) */
+.mq-manager-preview {
+  display: none !important;
+}
+
+/* Manager form layout: keep responsive and clean */
 .mq-manager-form {
   display: flex;
   gap: 14px;
@@ -59,33 +80,32 @@
   box-sizing: border-box;
 }
 
-/* When small screen, stack inside the single card */
+/* On small screens, stack form vertically */
 @media (max-width: 920px) {
   .mq-manager-form { flex-direction: column; }
 }
 
-/* Balance block styling inherited from dashboard but ensure no extra card */
+/* Balance block alignment (centered) */
 .dashboard-balance {
   width: 100%;
   text-align: center;
-  margin: 12px 0 8px;
-  padding: 12px 8px;
-  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-/* Typography helpers */
+/* Typography utilities */
 .muted { color: var(--muted); font-size: 0.92rem; }
 .small { font-size: 0.86rem; }
 
-/* Ensure ManagerForm inputs inherit consistent font sizing */
+/* Inputs inherit app font sizing for consistent visual rhythm */
 .mq-manager-amount-input, .mq-manager-input, .numpad-key-label {
   font-family: inherit;
   font-size: 1.05rem;
 }
 
-/* Minor adjustment: remove any outer shadows or background from wrapper classes used previously */
-.dashboard-card-inner,
+/* Remove old wrapper/card styles so no nested backgrounds remain */
 .dashboard-card-outer,
+.dashboard-card-inner,
 .dashboard-card-body,
 .dashboard-summary-row,
 .dashboard-summary {
@@ -95,7 +115,4 @@
   margin: 0;
 }
 
-/* Keep link-button token */
-.link-button { color: var(--accent-strong, #04996f); font-weight:600; text-decoration:none; }
-
-/* End manager.css */
+/* End of manager.css */

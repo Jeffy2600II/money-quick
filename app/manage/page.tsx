@@ -6,6 +6,12 @@ import '../../styles/manager.css';
 import BottomNav from '../../components/BottomNav';
 import Balance from '../../components/Balance';
 
+/**
+ * New: single application-level container (app-container).
+ * - No nested containers; everything lives inside app-container.
+ * - ManagerForm is used unchanged; preview inside it is hidden via CSS so only one card remains.
+ */
+
 export default function ManagePage() {
   const [balance, setBalance] = useState < number | null > (null);
   
@@ -28,34 +34,31 @@ export default function ManagePage() {
   }, []);
   
   return (
-    <main className="dashboard-page">
-      <div className="dashboard-vertical">
-        {/* Brand (identical to dashboard) */}
-        <div className="dashboard-brand" role="banner" aria-hidden>
-          <div className="logo" aria-hidden>
-            <div className="logo-line1">Money</div>
-            <div className="logo-line2">quick</div>
-          </div>
-          <div className="dashboard-prompt">จัดการรายการ</div>
+    <main className="app-root">
+      {/* Single top-level container only */}
+      <div className="app-container">
+        {/* Brand (kept visually consistent with Dashboard) */}
+        <div className="logo" aria-hidden style={{ textAlign: 'center', marginBottom: 6 }}>
+          <div className="logo-line1">Money</div>
+          <div className="logo-line2">quick</div>
         </div>
+        <div className="dashboard-prompt" style={{ textAlign: 'center', marginBottom: 12 }}>จัดการรายการ</div>
 
-        {/* Balance only */}
-        <div className="dashboard-balance" aria-hidden>
+        {/* Balance (centered, prominent) */}
+        <div style={{ textAlign: 'center', marginBottom: 16 }}>
           <Balance value={balance ?? 0} />
           <div className="muted small">ยอดคงเหลือ</div>
         </div>
 
-        {/* SINGLE container (no outer card background) */}
-        <div className="manage-container">
-          <header className="manage-header">
-            <h2 className="manage-title">บันทึกรายการ</h2>
-            <div className="manage-sub muted small">กรอกข้อมูลแล้วกดยืนยันเพื่อบันทึก</div>
-          </header>
+        {/* Page header (title + small hint) */}
+        <header className="manage-header">
+          <h2 className="manage-title">บันทึกรายการ</h2>
+          <div className="manage-sub muted small">กรอกข้อมูลแล้วกดยืนยันเพื่อบันทึก</div>
+        </header>
 
-          {/* Only one visible card: the ManagerForm card (.mq-manager-card) */}
-          <div className="manage-form-wrapper">
-            <ManagerForm />
-          </div>
+        {/* Single visible card area: ManagerForm (component unchanged) */}
+        <div className="manage-form-wrapper">
+          <ManagerForm />
         </div>
       </div>
 
