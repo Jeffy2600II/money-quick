@@ -1,36 +1,54 @@
-/* manager.css — focused tweaks only.
-   Goal: Visual parity with Dashboard (header, background color, spacing) without nested containers.
-   Do NOT override .dashboard-page background so it uses dashboard.css's background (var --neutral-50).
+/* Manager styles — tweaks to ensure header/brand spacing exactly matches Dashboard.
+   These rules only enforce the same spacing/align as dashboard.css and avoid overriding
+   global background / other tokens.
 */
 
-/* Keep minimal, conservative overrides specific to Manage page */
-
-/* Ensure header/title use same visual rhythm as dashboard */
-.manage-header {
+/* Ensure dashboard-brand on Manage matches Dashboard's spacing exactly */
+.dashboard-brand {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: var(--logo-gap, 10px);
+  margin: 26px 0 8px; /* same as dashboard.css */
 }
-.manage-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text, #111827);
-}
-.manage-sub {
+
+/* Logo lines — reuse tokens from globals for exact parity */
+.logo-line1 { font-size: var(--logo-line1); font-weight: 700; color: var(--text, #111827); line-height: 1; }
+.logo-line2 { font-size: var(--logo-line2); font-weight: 700; color: var(--accent); margin-top: -6px; }
+
+/* Prompt under logo — same spacing as Dashboard */
+.dashboard-prompt {
+  margin-top: 6px;
+  font-size: var(--prompt-size);
+  font-weight: 600;
   color: var(--muted);
-  font-size: 0.92rem;
+  margin-bottom: 18px;
+  text-align: center;
 }
 
-/* Wrapper for the single visible form card
-   No outer card background here; the ManagerForm's .mq-manager-card provides the single visual frame.
-*/
-.manage-form-wrapper {
-  width: 100%;
+/* Keep minimal overrides for Manage page (single container approach) */
+/* Container / form styling (no nested outer background) */
+.app-root {
+  min-height: 100vh;
+  background: var(--bg, #fff);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 12px 96px;
   box-sizing: border-box;
-  padding: 0;
+}
+.app-container {
+  width: 100%;
+  max-width: 720px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
 }
 
-/* Keep the ManagerForm's card as the only framed element */
+/* Manager form card (the single visible frame) */
 .mq-manager-card {
   background: #fff;
   border-radius: 12px;
@@ -38,16 +56,12 @@
   border: 1px solid rgba(15,23,42,0.06);
   box-sizing: border-box;
   width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
 }
 
-/* Hide any extra preview panels inside ManagerForm so only the main card is visible */
-.mq-manager-preview {
-  display: none !important;
-}
+/* Hide internal preview to keep single-card UI */
+.mq-manager-preview { display: none !important; }
 
-/* Ensure spacing & responsive behavior matches Dashboard */
+/* Form layout/responsive behavior */
 .mq-manager-form {
   display: flex;
   gap: 14px;
@@ -60,34 +74,6 @@
   .mq-manager-form { flex-direction: column; }
 }
 
-/* Do not override global dashboard background / brand styles.
-   Remove accidental overrides from previous versions by resetting wrapper classes to transparent.
-*/
-.dashboard-card-outer,
-.dashboard-card-inner,
-.dashboard-card-body,
-.dashboard-summary-row,
-.dashboard-summary {
-  background: transparent;
-  border: none;
-  padding: 0;
-  margin: 0;
-}
-
-/* Typography helpers (reuse design tokens) */
+/* Misc helpers (reuse tokens) */
 .muted { color: var(--muted); font-size: 0.92rem; }
 .small { font-size: 0.86rem; }
-
-/* Ensure form inputs use consistent font-size with Dashboard */
-.mq-manager-amount-input,
-.mq-manager-input,
-.numpad-key-label {
-  font-family: inherit;
-  font-size: 1.05rem;
-}
-
-/* If you later want subtle elevation for the single card, uncomment:
-.mq-manager-card { box-shadow: 0 6px 18px rgba(2,6,23,0.04); }
-*/
-
-/* End manager.css */
