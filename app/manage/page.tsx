@@ -7,10 +7,8 @@ import BottomNav from '../../components/BottomNav';
 import Balance from '../../components/Balance';
 
 /**
- * Manage page aligned to Dashboard visual system:
- * - Reuse dashboard-page & dashboard-vertical so background/header/colors are identical to Dashboard
- * - Only one visible card remains: the ManagerForm (.mq-manager-card)
- * - No history, no summary cards; header and spacing match Dashboard
+ * Manage page adjusted to exactly match Dashboard spacing.
+ * Added <div className="pin-top" /> spacer before the brand to align top spacing.
  */
 
 export default function ManagePage() {
@@ -37,6 +35,9 @@ export default function ManagePage() {
   return (
     <main className="dashboard-page">
       <div className="dashboard-vertical">
+        {/* Small top spacer used across PIN/dashboard pages to guarantee identical top offset */}
+        <div className="pin-top" />
+
         {/* Brand - identical structure to Dashboard for visual parity */}
         <div className="dashboard-brand" role="banner" aria-hidden>
           <div className="logo" aria-hidden>
@@ -52,7 +53,7 @@ export default function ManagePage() {
           <div className="muted small">ยอดคงเหลือ</div>
         </div>
 
-        {/* Page header and single form card only */}
+        {/* Page header and single form card only (no nested outer card) */}
         <div style={{ width: '100%', maxWidth: 720, margin: '0 auto', padding: '0 12px', boxSizing: 'border-box' }}>
           <header className="manage-header" style={{ marginBottom: 12 }}>
             <h2 className="manage-title" style={{ margin: 0 }}>บันทึกรายการ</h2>

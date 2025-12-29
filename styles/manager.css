@@ -1,17 +1,43 @@
-/* Manager styles — tweaks to ensure header/brand spacing exactly matches Dashboard.
-   These rules only enforce the same spacing/align as dashboard.css and avoid overriding
-   global background / other tokens.
+/* manager.css — ensure header spacing exactly matches dashboard.css
+   - pin-top / dashboard-vertical / dashboard-brand values mirrored from dashboard.css
+   - minimal, conservative overrides so Manage visually matches Dashboard
 */
 
-/* Ensure dashboard-brand on Manage matches Dashboard's spacing exactly */
+/* Ensure dashboard-vertical uses same padding as dashboard.css for exact vertical rhythm */
+.dashboard-vertical {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 20px 12px 96px; /* same as dashboard.css */
+  box-sizing: border-box;
+}
+
+/* Small top spacer used on Dashboard pages */
+.pin-top { width:100%; max-width:420px; height: 10px; }
+
+/* dashboard-brand exactly like dashboard.css */
 .dashboard-brand {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--logo-gap, 10px);
-  margin: 26px 0 8px; /* same as dashboard.css */
+  margin: 26px 0 8px;
 }
-
+.logo { display:flex; flex-direction:column; align-items:center; line-height:1; }
+.logo-line1 {
+  font-size: var(--logo-line1);
+  font-weight: 700;
+  color: var(--text);
+}
+.logo-line2 {
+  font-size: var(--logo-line2);
+  font-weight: 700;
+  color: var(--accent);
+  margin-top: -6px;
+}
 
 /* Prompt under logo — same spacing as Dashboard */
 .dashboard-prompt {
@@ -23,29 +49,25 @@
   text-align: center;
 }
 
-/* Keep minimal overrides for Manage page (single container approach) */
-/* Container / form styling (no nested outer background) */
-.app-root {
-  min-height: 100vh;
-  background: var(--bg, #fff);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 18px 12px 96px;
-  box-sizing: border-box;
-}
-.app-container {
+/* Balance block (reuses dashboard tokens) */
+.dashboard-balance {
   width: 100%;
-  max-width: 720px;
+  text-align: center;
+  margin: 12px 0 8px;
+  padding: 12px 8px;
   box-sizing: border-box;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: stretch;
 }
 
-/* Manager form card (the single visible frame) */
+/* Keep manage header & sub */
+.manage-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.manage-title { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text, #111827); }
+.manage-sub { margin: 0; color: var(--muted); font-size: 0.92rem; }
+
+/* ManagerForm card — the single visible framed element */
 .mq-manager-card {
   background: #fff;
   border-radius: 12px;
@@ -55,10 +77,10 @@
   width: 100%;
 }
 
-/* Hide internal preview to keep single-card UI */
+/* Hide ManagerForm preview to keep single-card UI */
 .mq-manager-preview { display: none !important; }
 
-/* Form layout/responsive behavior */
+/* Form layout/responsive behavior (same rhythm as dashboard) */
 .mq-manager-form {
   display: flex;
   gap: 14px;
@@ -71,6 +93,18 @@
   .mq-manager-form { flex-direction: column; }
 }
 
-/* Misc helpers (reuse tokens) */
+/* Utility tokens */
 .muted { color: var(--muted); font-size: 0.92rem; }
 .small { font-size: 0.86rem; }
+
+/* Avoid leftover nested card styles from previous attempts */
+.dashboard-card-outer,
+.dashboard-card-inner,
+.dashboard-card-body,
+.dashboard-summary-row,
+.dashboard-summary {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
